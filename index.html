@@ -3,2156 +3,1648 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan PPSU - Firebase Edition</title>
+    <title>PPSU-Pisbar-App</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <!-- Firebase SDK v9 -->
+    <!-- Firebase SDK -->
     <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase, ref, push, set, onValue, remove, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
-        import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-
-        // Firebase Configuration (Demo - Replace with your actual config)
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+        import { getStorage } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js';
+        
+        // KONFIGURASI FIREBASE - TERHUBUNG KE PROYEK ANDA
         const firebaseConfig = {
-            apiKey: "demo-api-key",
-            authDomain: "ppsu-pisangan-baru.firebaseapp.com",
-            databaseURL: "https://ppsu-pisangan-baru-default-rtdb.asia-southeast1.firebasedatabase.app/",
-            projectId: "ppsu-pisangan-baru",
-            storageBucket: "ppsu-pisangan-baru.appspot.com",
-            messagingSenderId: "123456789012",
-            appId: "1:123456789012:web:demo-app-id"
+            apiKey: "AIzaSyDhtb3vYVPopaNHyhUlHaxsFhA6_gbyDvg",
+            authDomain: "aplikasi-laporan-ppsu.firebaseapp.com",
+            databaseURL: "https://aplikasi-laporan-ppsu-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "aplikasi-laporan-ppsu",
+            storageBucket: "aplikasi-laporan-ppsu.firebasestorage.app",
+            messagingSenderId: "990462370722",
+            appId: "1:990462370722:web:4ab77301f1decdfc1c88fb",
+            measurementId: "G-7T6X3MMYEH"
         };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
-        const storage = getStorage(app);
-        const auth = getAuth(app);
-
-        // Make Firebase available globally
-        window.firebaseApp = app;
-        window.firebaseDB = database;
-        window.firebaseStorage = storage;
-        window.firebaseAuth = auth;
-        window.firebaseModules = {
-            ref, push, set, onValue, remove, update,
-            storageRef, uploadBytes, getDownloadURL, deleteObject,
-            signInAnonymously, onAuthStateChanged
-        };
-
-        // Initialize authentication
-        signInAnonymously(auth).then(() => {
-            console.log('Firebase authenticated successfully');
-            window.initializeApp();
-        }).catch((error) => {
-            console.error('Firebase authentication failed:', error);
-            // For demo purposes, continue without Firebase
-            window.initializeApp();
-        });
+        
+        // CATATAN: Konfigurasi di atas adalah contoh. Untuk data tersimpan permanen:
+        // 1. Buat proyek Firebase di https://console.firebase.google.com
+        // 2. Aktifkan Firestore Database
+        // 3. Ganti konfigurasi di atas dengan data proyek Anda
+        // 4. Atur aturan keamanan Firestore untuk akses publik (development) atau sesuai kebutuhan
+        
+        window.firebaseApp = initializeApp(firebaseConfig);
+        window.db = getFirestore(window.firebaseApp);
+        window.storage = getStorage(window.firebaseApp);
+        
+        // Export Firebase functions to global scope
+        window.collection = collection;
+        window.addDoc = addDoc;
+        window.getDocs = getDocs;
+        window.deleteDoc = deleteDoc;
+        window.doc = doc;
+        window.onSnapshot = onSnapshot;
+        window.orderBy = orderBy;
+        window.query = query;
+        window.serverTimestamp = serverTimestamp;
+        window.updateDoc = updateDoc;
     </script>
-
     <style>
-        .fade-in { animation: fadeIn 0.8s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
-        .slide-in-left { animation: slideInLeft 0.6s ease-out; }
-        @keyframes slideInLeft { from { opacity: 0; transform: translateX(-50px); } to { opacity: 1; transform: translateX(0); } }
-        
-        .slide-in-right { animation: slideInRight 0.6s ease-out; }
-        @keyframes slideInRight { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
-        
-        .pulse-dot { animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        
-        .floating { animation: floating 3s ease-in-out infinite; }
-        @keyframes floating { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
-        
-        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .card-hover { transition: all 0.3s ease; }
-        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
-        
-        .glass-effect { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
-        
-        .loading-spinner {
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 3px solid #ffffff;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
+        * {
+            font-family: 'Inter', sans-serif;
         }
         
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            animation: gradientShift 8s ease-in-out infinite;
         }
         
-        .connection-status {
-            display: inline-block;
-            margin-left: 8px;
-            padding: 4px 8px;
-            border-radius: 8px;
-            font-size: 10px;
-            font-weight: 500;
+        @keyframes gradientShift {
+            0%, 100% { background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); }
+            50% { background: linear-gradient(135deg, #764ba2 0%, #f093fb 50%, #667eea 100%); }
+        }
+        
+        .card-hover {
             transition: all 0.3s ease;
-            backdrop-filter: blur(8px);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
         
-        .connection-online {
-            background: rgba(34, 197, 94, 0.85);
-            color: white;
-            border: 1px solid rgba(34, 197, 94, 0.4);
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
         
-        .connection-offline {
-            background: rgba(239, 68, 68, 0.85);
-            color: white;
-            border: 1px solid rgba(239, 68, 68, 0.4);
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
         }
-
-        .firebase-indicator {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-left: 8px;
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+        
+        .pulse-button {
             animation: pulse 2s infinite;
         }
-
-        .sync-indicator {
-            display: inline-block;
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            margin-right: 4px;
-            animation: pulse 2s infinite;
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
-
-        .sync-online { background: #10b981; }
-        .sync-offline { background: #ef4444; }
-        .sync-syncing { background: #f59e0b; animation: spin 1s linear infinite; }
-
-        @media (max-width: 768px) {
-            .mobile-grid { grid-template-columns: 1fr; }
-            .mobile-text { font-size: 0.875rem; }
-            .mobile-padding { padding: 1rem; }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .hamburger {
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            padding: 4px;
+        }
+        
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: white;
+            margin: 3px 0;
+            transition: 0.3s;
+            border-radius: 2px;
+        }
+        
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(-45deg) translate(-5px, 6px);
+        }
+        
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+        
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(45deg) translate(-5px, -6px);
+        }
+        
+        .mobile-menu {
+            position: fixed;
+            top: 0;
+            left: -100%;
+            width: 280px;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            transition: left 0.3s ease;
+            z-index: 1000;
+            padding-top: 80px;
+        }
+        
+        .mobile-menu.active {
+            left: 0;
+        }
+        
+        .mobile-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .mobile-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .camera-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .camera-preview {
+            width: 100%;
+            border-radius: 12px;
+            background: #000;
+        }
+        
+        .camera-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+        
+        .capture-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: white;
+            border: 4px solid #ccc;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .capture-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .post-animation {
+            animation: postSlideIn 0.5s ease-out;
+        }
+        
+        @keyframes postSlideIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(-20px) scale(0.95); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            }
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 min-h-screen relative overflow-x-hidden">
-    <!-- Connection Status Indicator will be in admin header -->
-
-    <!-- Firebase Sync Indicator will be in admin header -->
-
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-        <div class="bg-white rounded-xl p-8 text-center">
-            <div class="loading-spinner mx-auto mb-4"></div>
-            <p class="text-gray-700 font-medium">Menghubungkan ke Firebase...</p>
+<body class="gradient-bg min-h-screen">
+    <!-- Mobile Overlay -->
+    <div id="mobileOverlay" class="mobile-overlay" onclick="toggleMobileMenu()"></div>
+    
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="mobile-menu">
+        <div class="px-6 py-4">
+            <div class="flex items-center space-x-3 mb-8">
+                <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                    <span class="text-white font-bold text-lg">P</span>
+                </div>
+                <h1 class="text-white text-lg font-bold">PPSU-Pisbar-App</h1>
+            </div>
+            <nav class="space-y-2">
+                <button onclick="showPage('home'); toggleMobileMenu();" class="w-full text-left text-white hover:bg-white/10 px-4 py-3 rounded-lg transition-colors flex items-center space-x-3">
+                    <span>🏠</span>
+                    <span>Beranda</span>
+                </button>
+                <button onclick="showPage('reports'); toggleMobileMenu();" class="w-full text-left text-white hover:bg-white/10 px-4 py-3 rounded-lg transition-colors flex items-center space-x-3">
+                    <span>📝</span>
+                    <span>Laporan</span>
+                </button>
+                <button onclick="showPage('feed'); toggleMobileMenu();" class="w-full text-left text-white hover:bg-white/10 px-4 py-3 rounded-lg transition-colors flex items-center space-x-3">
+                    <span>💬</span>
+                    <span>Feed</span>
+                </button>
+                <button onclick="showPage('admin'); toggleMobileMenu();" class="w-full text-left text-white hover:bg-white/10 px-4 py-3 rounded-lg transition-colors flex items-center space-x-3">
+                    <span>⚙️</span>
+                    <span>Admin</span>
+                </button>
+            </nav>
         </div>
     </div>
 
+    <!-- Notification -->
+    <div id="notification" class="notification bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg text-sm">
+        <span id="notificationText">Berhasil!</span>
+    </div>
+
     <!-- Navigation -->
-    <nav class="glass-effect shadow-2xl border-b border-white/20 relative z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-20">
-                <!-- Logo and Title -->
-                <div class="flex items-center slide-in-left">
-                    <div class="floating">
-                        <i class="fas fa-clipboard-list text-white text-3xl mr-4 drop-shadow-lg"></i>
+    <nav class="bg-white/10 backdrop-blur-md border-b border-white/20 sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">P</span>
                     </div>
-                    <div>
-                        <h1 class="text-2xl font-bold text-white drop-shadow-lg">Laporan PPSU</h1>
-                        <p class="text-white/80 text-sm font-medium">Pisangan Baru</p>
-                    </div>
+                    <h1 class="text-white text-lg font-bold">PPSU-Pisbar-App</h1>
                 </div>
-
-                <!-- Desktop Navigation -->
-                <div class="hidden md:flex items-center space-x-6 slide-in-right">
-                    <button onclick="showPage('dashboard')" id="dashboardBtn" class="px-6 py-3 bg-white/20 text-white rounded-xl hover:bg-white/30 transition-all duration-300 font-semibold backdrop-blur-sm border border-white/20">
-                        <i class="fas fa-chart-bar mr-2"></i>Dashboard
-                    </button>
-                    <button onclick="showPage('info')" id="infoBtn" class="px-6 py-3 bg-white/20 text-white rounded-xl hover:bg-white/30 transition-all duration-300 font-semibold backdrop-blur-sm border border-white/20 relative">
-                        <i class="fas fa-info-circle mr-2"></i>Informasi
-                        <span id="notificationBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold hidden pulse-dot">0</span>
-                    </button>
-                    <button onclick="toggleNotifications()" id="notificationBtn" class="px-4 py-3 bg-white/20 text-white rounded-xl hover:bg-white/30 transition-all duration-300 font-semibold backdrop-blur-sm border border-white/20 relative">
-                        <i class="fas fa-bell text-lg"></i>
-                        <span id="notificationBadgeDesktop" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold hidden pulse-dot">0</span>
-                    </button>
-                    <button onclick="checkAdminAccess()" id="adminBtn" class="px-6 py-3 bg-white/20 text-white rounded-xl hover:bg-white/30 transition-all duration-300 font-semibold backdrop-blur-sm border border-white/20">
-                        <i class="fas fa-cog mr-2"></i>Admin
-                    </button>
-                </div>
-
-                <!-- Mobile Hamburger Menu -->
-                <div class="md:hidden">
-                    <button onclick="toggleMobileMenu()" id="hamburgerBtn" class="p-3 bg-white/20 rounded-lg backdrop-blur-sm border border-white/30">
-                        <div class="w-6 h-0.5 bg-white mb-1"></div>
-                        <div class="w-6 h-0.5 bg-white mb-1"></div>
-                        <div class="w-6 h-0.5 bg-white"></div>
-                    </button>
+                
+                <!-- Hamburger Menu -->
+                <div class="hamburger" onclick="toggleMobileMenu()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Mobile Menu -->
-    <div id="mobileMenu" class="fixed top-0 left-0 w-72 h-full bg-gradient-to-br from-red-600 via-purple-600 to-purple-800 z-50 transform -translate-x-full transition-transform duration-300 md:hidden shadow-2xl">
-        <div class="flex flex-col h-full">
-            <div class="flex items-center justify-between p-6 border-b border-white/20">
-                <div class="flex items-center">
-                    <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center mr-3">
-                        <i class="fas fa-clipboard-list text-white text-lg"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-lg font-bold text-white">Laporan PPSU</h2>
-                        <p class="text-white/70 text-xs">Pisangan Baru</p>
+    <!-- Home Page -->
+    <div id="homePage" class="page fade-in">
+        <div class="container mx-auto px-4 py-8">
+            <div class="text-center mb-8">
+                <h2 class="text-2xl md:text-3xl font-bold text-white mb-3">Selamat Datang di PPSU-Pisbar-App</h2>
+                <p class="text-white/80 text-sm md:text-base">Sistem Pelaporan Kerja Digital untuk Tim PPSU</p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto">
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 md:p-6 card-hover border border-white/20">
+                    <div class="text-center">
+                        <div class="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <span class="text-white text-lg md:text-xl">📝</span>
+                        </div>
+                        <h3 class="text-white text-lg md:text-xl font-semibold mb-2">Input Laporan</h3>
+                        <p class="text-white/70 mb-3 text-sm">Buat laporan kerja harian dengan mudah</p>
+                        <button onclick="showPage('reports')" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm">
+                            Mulai Laporan
+                        </button>
                     </div>
                 </div>
-                <button onclick="toggleMobileMenu()" class="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded-lg transition-all duration-300">
-                    <i class="fas fa-times text-lg"></i>
+                
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 md:p-6 card-hover border border-white/20">
+                    <div class="text-center">
+                        <div class="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <span class="text-white text-lg md:text-xl">💬</span>
+                        </div>
+                        <h3 class="text-white text-lg md:text-xl font-semibold mb-2">Feed Aktivitas</h3>
+                        <p class="text-white/70 mb-3 text-sm">Lihat dan komentari aktivitas tim</p>
+                        <button onclick="showPage('feed')" class="bg-gradient-to-r from-green-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm">
+                            Lihat Feed
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 md:p-6 card-hover border border-white/20">
+                    <div class="text-center">
+                        <div class="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <span class="text-white text-lg md:text-xl">⚙️</span>
+                        </div>
+                        <h3 class="text-white text-lg md:text-xl font-semibold mb-2">Panel Admin</h3>
+                        <p class="text-white/70 mb-3 text-sm">Kelola petugas dan rekap laporan</p>
+                        <button onclick="showPage('admin')" class="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm">
+                            Masuk Admin
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Page -->
+    <div id="reportsPage" class="page hidden">
+        <div class="container mx-auto px-4 py-6">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-xl md:text-2xl font-bold text-white mb-6 text-center">Input Laporan Kerja</h2>
+                
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 md:p-6 border border-white/20">
+                    <form id="reportForm" class="space-y-4">
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-white font-medium mb-1 text-sm">Tim</label>
+                                <input type="text" id="team" placeholder="Masukkan nama tim" class="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-white font-medium mb-1 text-sm">Shift Jam Kerja</label>
+                                <input type="text" id="shift" placeholder="Masukkan shift jam kerja" class="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                            </div>
+                        </div>
+                        
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-white font-medium mb-1 text-sm">Nama Petugas Aktif</label>
+                                <input type="text" id="activeOfficers" placeholder="Masukkan nama petugas aktif" class="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-white font-medium mb-1 text-sm">Nama Petugas Tidak Aktif <span class="text-white/50">(Opsional)</span></label>
+                                <input type="text" id="inactiveOfficers" placeholder="Masukkan nama petugas tidak aktif (jika ada)" class="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white font-medium mb-1 text-sm">Lokasi Kerja</label>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <input type="text" id="location" placeholder="Lokasi akan terdeteksi otomatis" class="flex-1 px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm" readonly>
+                                <button type="button" onclick="getLocation()" class="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm whitespace-nowrap">
+                                    📍 Ambil Lokasi
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white font-medium mb-1 text-sm">Foto Dokumentasi</label>
+                            <div class="camera-container">
+                                <video id="cameraPreview" class="camera-preview hidden" autoplay playsinline></video>
+                                <canvas id="photoCanvas" class="hidden"></canvas>
+                                <div id="photoPreview" class="hidden">
+                                    <img id="previewImage" class="w-full rounded-lg shadow-lg">
+                                </div>
+                                <div class="flex flex-col sm:flex-row gap-2 mt-2">
+                                    <button type="button" id="startCameraBtn" onclick="startCamera()" class="bg-gradient-to-r from-green-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm">
+                                        📷 Buka Kamera
+                                    </button>
+                                    <button type="button" id="captureBtn" onclick="capturePhoto()" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm hidden">
+                                        📸 Ambil Foto
+                                    </button>
+                                    <button type="button" id="retakeBtn" onclick="retakePhoto()" class="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm hidden">
+                                        🔄 Foto Ulang
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white font-medium mb-1 text-sm">Deskripsi Pengerjaan</label>
+                            <textarea id="description" rows="3" placeholder="Jelaskan detail pekerjaan yang dilakukan..." class="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none text-sm"></textarea>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="submit" class="bg-gradient-to-r from-green-500 to-blue-500 text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition-all pulse-button text-sm">
+                                📤 Submit Laporan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feed Page -->
+    <div id="feedPage" class="page hidden">
+        <div class="container mx-auto px-4 py-6">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-xl md:text-2xl font-bold text-white mb-6 text-center">Feed Aktivitas Tim</h2>
+                
+                <!-- Post Input Form -->
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 md:p-6 border border-white/20 mb-6">
+                    <h3 class="text-white font-semibold mb-4 flex items-center">
+                        <span class="mr-2">✍️</span>
+                        Buat Postingan Baru
+                    </h3>
+                    <form id="postForm" class="space-y-4">
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-white font-medium mb-1 text-sm">Nama Petugas</label>
+                                <input type="text" id="postAuthor" placeholder="Masukkan nama Anda" class="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-white font-medium mb-1 text-sm">Tim</label>
+                                <input type="text" id="postTeam" placeholder="Masukkan nama tim" class="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white font-medium mb-1 text-sm">Informasi/Pengumuman</label>
+                            <textarea id="postContent" rows="3" placeholder="Bagikan informasi, pengumuman, atau update kegiatan..." class="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none text-sm"></textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white font-medium mb-1 text-sm">Lokasi (Opsional)</label>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <input type="text" id="postLocation" placeholder="Masukkan lokasi atau ambil otomatis" class="flex-1 px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                                <button type="button" onclick="getPostLocation()" class="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm whitespace-nowrap">
+                                    📍 Ambil Lokasi
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="submit" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition-all text-sm">
+                                📢 Posting Sekarang
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div id="feedContainer" class="space-y-6">
+                    <!-- Feed items will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Login -->
+    <div id="adminLoginPage" class="page hidden">
+        <div class="container mx-auto px-4 py-6">
+            <div class="max-w-md mx-auto">
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+                    <h2 class="text-xl font-bold text-white mb-4 text-center">Login Admin</h2>
+                    
+                    <form id="adminLoginForm" class="space-y-3">
+                        <div>
+                            <label class="block text-white font-medium mb-1 text-sm">Username</label>
+                            <input type="text" id="adminUsername" placeholder="Masukkan username" class="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white font-medium mb-1 text-sm">Password</label>
+                            <input type="password" id="adminPassword" placeholder="Masukkan password" class="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                        </div>
+                        
+                        <button type="submit" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 rounded-lg font-semibold hover:shadow-lg transition-all text-sm">
+                            🔐 Login
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" class="page hidden">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl md:text-2xl font-bold text-white">Dashboard Admin</h2>
+                <button onclick="logout()" class="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm">
+                    🚪 Logout
                 </button>
             </div>
             
-            <div class="flex-1 p-4 overflow-y-auto">
-                <nav class="space-y-2">
-                    <button onclick="showPage('dashboard'); toggleMobileMenu();" class="w-full flex items-center px-4 py-3 text-white rounded-lg hover:bg-white/10 transition-all duration-300">
-                        <i class="fas fa-chart-bar mr-3"></i>Dashboard
-                    </button>
-                    <button onclick="showPage('info'); toggleMobileMenu();" class="w-full flex items-center px-4 py-3 text-white rounded-lg hover:bg-white/10 transition-all duration-300">
-                        <i class="fas fa-info-circle mr-3"></i>Informasi
-                    </button>
-                    <button onclick="toggleNotifications(); toggleMobileMenu();" class="w-full flex items-center px-4 py-3 text-white rounded-lg hover:bg-white/10 transition-all duration-300">
-                        <i class="fas fa-bell mr-3"></i>Notifikasi
-                    </button>
-                    <button onclick="checkAdminAccess(); toggleMobileMenu();" class="w-full flex items-center px-4 py-3 text-white rounded-lg hover:bg-white/10 transition-all duration-300">
-                        <i class="fas fa-cog mr-3"></i>Admin Panel
-                    </button>
-                </nav>
+            <!-- Stats Cards -->
+            <div class="grid md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-white" id="totalReports">0</div>
+                        <div class="text-white/70">Total Laporan</div>
+                    </div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-white" id="todayReports">0</div>
+                        <div class="text-white/70">Laporan Hari Ini</div>
+                    </div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-white" id="activeOfficersCount">0</div>
+                        <div class="text-white/70">Petugas Aktif</div>
+                    </div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-white" id="totalPosts">0</div>
+                        <div class="text-white/70">Total Postingan</div>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Mobile Menu Backdrop -->
-    <div id="mobileBackdrop" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden md:hidden" onclick="toggleMobileMenu()"></div>
-
-    <!-- Notification Panel -->
-    <div id="notificationPanel" class="fixed top-20 right-4 w-96 max-w-[90vw] bg-white rounded-2xl shadow-2xl border border-gray-200 z-[60] hidden max-h-[70vh] overflow-hidden">
-        <div class="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-2xl">
-            <div class="flex items-center justify-between">
-                <h3 class="text-lg font-semibold flex items-center">
-                    <i class="fas fa-bell mr-2"></i>Notifikasi
-                </h3>
-                <button onclick="toggleNotifications()" class="text-white hover:text-gray-200 transition-colors">
-                    <i class="fas fa-times text-lg"></i>
+            
+            <!-- Export Buttons -->
+            <div class="mb-6 flex space-x-4">
+                <button onclick="exportToExcel()" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors">
+                    📊 Export Excel
+                </button>
+                <button onclick="exportToPDF()" class="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-colors">
+                    📄 Export PDF
                 </button>
             </div>
-        </div>
-        <div id="notificationList" class="overflow-y-auto max-h-96">
-            <!-- Notifications will be populated here -->
-        </div>
-        <div id="emptyNotifications" class="p-8 text-center text-gray-500">
-            <i class="fas fa-bell-slash text-4xl mb-3 text-gray-300"></i>
-            <p class="text-sm">Belum ada notifikasi</p>
-        </div>
-    </div>
-
-    <!-- Dashboard Page -->
-    <div id="dashboardPage" class="max-w-7xl mx-auto mobile-padding p-6 relative z-10">
-        <!-- Statistics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-            <div class="glass-effect rounded-2xl shadow-2xl p-4 md:p-6 border-l-4 border-green-400 card-hover fade-in">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-white/80">Laporan Hari Ini</p>
-                        <p id="todayReports" class="text-2xl md:text-3xl font-bold text-green-400">0</p>
-                    </div>
-                    <div class="floating">
-                        <i class="fas fa-check-circle text-green-400 text-2xl md:text-3xl"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="glass-effect rounded-2xl shadow-2xl p-4 md:p-6 border-l-4 border-blue-400 card-hover fade-in">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-white/80">Total Petugas</p>
-                        <p id="totalOfficers" class="text-2xl md:text-3xl font-bold text-blue-400">43</p>
-                    </div>
-                    <div class="floating">
-                        <i class="fas fa-users text-blue-400 text-2xl md:text-3xl"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="glass-effect rounded-2xl shadow-2xl p-4 md:p-6 border-l-4 border-yellow-400 card-hover fade-in">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-white/80">Belum Lapor</p>
-                        <p id="pendingReports" class="text-2xl md:text-3xl font-bold text-yellow-400">43</p>
-                    </div>
-                    <div class="floating">
-                        <i class="fas fa-clock text-yellow-400 text-2xl md:text-3xl"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="glass-effect rounded-2xl shadow-2xl p-4 md:p-6 border-l-4 border-purple-400 card-hover fade-in">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-white/80">Tingkat Kepatuhan</p>
-                        <p id="complianceRate" class="text-2xl md:text-3xl font-bold text-purple-400">0%</p>
-                    </div>
-                    <div class="floating">
-                        <i class="fas fa-chart-pie text-purple-400 text-2xl md:text-3xl"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Add Report Form -->
-        <div class="glass-effect rounded-2xl shadow-2xl p-4 md:p-6 mb-8 fade-in">
-            <div class="mb-6">
-                <h3 class="text-xl md:text-2xl font-semibold text-white mb-2">
-                    <i class="fas fa-plus-circle mr-2 text-green-400 floating"></i>Input Laporan Kerja
-                </h3>
-                <div class="flex items-center text-white/80">
-                    <i class="fas fa-clock mr-2 text-blue-400"></i>
-                    <span id="realTimeClock" class="text-sm font-medium">Loading...</span>
-                </div>
-            </div>
-            <form id="reportForm" class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-white/90 mb-2">Tim</label>
-                    <input type="text" id="tim" class="w-full px-4 py-3 glass-effect border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-white placeholder-white/50 transition-all duration-300" placeholder="Masukkan nama tim" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-white/90 mb-2">Nama Petugas Aktif</label>
-                    <select id="petugasAktif" class="w-full px-4 py-3 glass-effect border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-white transition-all duration-300" required>
-                        <option value="" class="bg-gray-800">Pilih Petugas</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-white/90 mb-2">Nama Petugas Tidak Aktif</label>
-                    <input type="text" id="petugasTidakAktif" class="w-full px-4 py-3 glass-effect border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-white placeholder-white/50 transition-all duration-300" placeholder="Opsional">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-white/90 mb-2">Lokasi Area Kerja</label>
-                    <input type="text" id="lokasi" class="w-full px-4 py-3 glass-effect border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-white placeholder-white/50 transition-all duration-300" placeholder="Ketik nama lokasi kerja" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-white/90 mb-2">
-                        Verifikasi GPS 
-                        <span class="text-red-400">*</span>
-                        <span class="text-xs text-white/60">(Wajib untuk validasi)</span>
-                    </label>
-                    <div class="space-y-2">
-                        <div class="flex gap-2">
-                            <button type="button" onclick="getCurrentLocation()" id="locationBtn" class="flex-1 px-3 py-2 bg-red-500/30 text-white rounded-lg hover:bg-red-500/50 transition-all duration-300 backdrop-blur-sm border border-red-400/30 text-sm">
-                                <i class="fas fa-map-marker-alt mr-2"></i>
-                                <span id="locationBtnText">Ambil GPS (Wajib)</span>
-                            </button>
-                            <button type="button" onclick="openLocationMap()" class="px-3 py-2 bg-blue-500/30 text-white rounded-lg hover:bg-blue-500/50 transition-all duration-300 backdrop-blur-sm border border-blue-400/30 text-sm">
-                                <i class="fas fa-map mr-2"></i>Lihat Peta
-                            </button>
-                        </div>
-                        <div id="locationInfo" class="hidden text-xs text-white/70 bg-white/10 rounded-lg p-3">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-green-400 font-semibold">
-                                    <i class="fas fa-check-circle mr-1"></i>GPS Berhasil Diambil
-                                </span>
-                                <span class="text-white/50 text-xs">Verifikasi Lokasi</span>
-                            </div>
-                            <div class="grid grid-cols-1 gap-1">
-                                <div class="flex items-center">
-                                    <i class="fas fa-crosshairs mr-2 text-green-400"></i>
-                                    <span id="coordinatesText">Koordinat: -</span>
-                                </div>
-                                <div class="flex items-center">
-                                    <i class="fas fa-bullseye mr-2 text-blue-400"></i>
-                                    <span id="accuracyText">Akurasi: -</span>
-                                </div>
-                                <div class="flex items-center">
-                                    <i class="fas fa-clock mr-2 text-purple-400"></i>
-                                    <span id="locationTime">Waktu: -</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="locationWarning" class="text-xs text-yellow-300 bg-yellow-500/20 rounded-lg p-2 border border-yellow-400/30">
-                            <i class="fas fa-exclamation-triangle mr-1"></i>
-                            <strong>Penting:</strong> Anda harus mengambil GPS untuk verifikasi lokasi sebelum mengirim laporan
-                        </div>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-white/90 mb-2">Jam Kerja</label>
-                    <input type="time" id="jamKerja" class="w-full px-4 py-3 glass-effect border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-white transition-all duration-300" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-white/90 mb-2">Istirahat</label>
-                    <input type="time" id="istirahat" class="w-full px-4 py-3 glass-effect border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-white transition-all duration-300">
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-white/90 mb-2">Deskripsi Pekerjaan/Pengerjaan</label>
-                    <textarea id="deskripsi" rows="3" class="w-full px-4 py-3 glass-effect border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-white placeholder-white/50 transition-all duration-300 resize-none" placeholder="Deskripsikan pekerjaan yang dilakukan..." required></textarea>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-white/90 mb-2">Foto Kerja (Live Camera)</label>
-                    <div class="space-y-3">
-                        <div class="flex gap-2">
-                            <button type="button" onclick="openCamera('user')" class="flex-1 px-4 py-2 bg-blue-500/30 text-white rounded-xl hover:bg-blue-500/50 transition-all duration-300 backdrop-blur-sm border border-blue-400/30">
-                                <i class="fas fa-camera mr-2"></i>Kamera Depan
-                            </button>
-                            <button type="button" onclick="openCamera('environment')" class="flex-1 px-4 py-2 bg-green-500/30 text-white rounded-xl hover:bg-green-500/50 transition-all duration-300 backdrop-blur-sm border border-green-400/30">
-                                <i class="fas fa-camera mr-2"></i>Kamera Belakang
-                            </button>
-                        </div>
-                        <div id="photoPreview" class="hidden">
-                            <img id="previewImage" class="max-w-full h-48 object-cover rounded-xl border-2 border-white/20">
-                            <button type="button" onclick="removePhoto()" class="mt-2 px-3 py-1 bg-red-500/30 text-white rounded-lg text-sm hover:bg-red-500/50 transition-all duration-300 backdrop-blur-sm border border-red-400/30">
-                                <i class="fas fa-trash mr-1"></i>Hapus Foto
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-white/90 mb-2">Catatan Target</label>
-                    <textarea id="catatanTarget" rows="3" class="w-full px-4 py-3 glass-effect border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-white placeholder-white/50 transition-all duration-300 resize-none" placeholder="Catatan tambahan"></textarea>
-                </div>
-                <div class="md:col-span-2">
-                    <button type="submit" id="submitBtn" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-4 px-6 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 font-semibold text-lg shadow-2xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i class="fas fa-paper-plane mr-2"></i>Kirim Laporan
-                    </button>
-                </div>
-            </form>
-        </div>
-
-        <!-- Recent Reports Table -->
-        <div class="glass-effect rounded-2xl shadow-2xl overflow-hidden fade-in">
-            <div class="px-4 md:px-6 py-4 border-b border-white/20">
-                <h3 class="text-lg md:text-xl font-semibold text-white">
-                    <span class="pulse-dot inline-block w-3 h-3 bg-green-400 rounded-full mr-2"></span>
-                    Laporan Terbaru (Real-time)
-                </h3>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-white/20">
-                    <thead class="glass-effect">
-                        <tr>
-                            <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Waktu</th>
-                            <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Tim</th>
-                            <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Petugas</th>
-                            <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Lokasi</th>
-                            <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Status</th>
-                            <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reportsTableBody" class="divide-y divide-white/10">
-                        <!-- Reports will be populated here -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Information Page -->
-    <div id="infoPage" class="max-w-7xl mx-auto mobile-padding p-6 hidden relative z-10">
-        <!-- Post New Information (Admin Only) -->
-        <div id="postInfoSection" class="glass-effect rounded-2xl shadow-2xl p-6 mb-8 fade-in hidden">
-            <div class="mb-6">
-                <h3 class="text-xl font-semibold text-white mb-2">
-                    <i class="fas fa-plus-circle mr-2 text-green-400"></i>Posting Informasi Baru
-                </h3>
-                <p class="text-white/70 text-sm">Bagikan jadwal, pengumuman, atau informasi penting untuk semua petugas</p>
-            </div>
-            <form id="infoForm" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-white/90 mb-2">Jenis Informasi</label>
-                        <select id="infoType" class="w-full px-4 py-3 glass-effect border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-white transition-all duration-300" required>
-                            <option value="" class="bg-gray-800">Pilih Jenis</option>
-                            <option value="schedule" class="bg-gray-800">📅 Jadwal Kerja</option>
-                            <option value="announcement" class="bg-gray-800">📢 Pengumuman</option>
-                            <option value="info" class="bg-gray-800">ℹ️ Informasi Umum</option>
-                            <option value="urgent" class="bg-gray-800">🚨 Penting/Mendesak</option>
+            
+            <!-- Management Tables -->
+            <div class="space-y-8">
+                <!-- Reports Management Table -->
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+                    <h3 class="text-xl font-bold text-white mb-4">Manajemen Laporan Kerja</h3>
+                    
+                    <div class="mb-4 flex space-x-4">
+                        <select id="filterPeriod" class="px-4 py-2 rounded-lg bg-white/20 border border-white/30 text-white">
+                            <option value="daily">Harian</option>
+                            <option value="monthly">Bulanan</option>
                         </select>
+                        <input type="date" id="filterDate" class="px-4 py-2 rounded-lg bg-white/20 border border-white/30 text-white">
                     </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-white">
+                            <thead>
+                                <tr class="border-b border-white/20">
+                                    <th class="text-left py-3 px-4">Tanggal</th>
+                                    <th class="text-left py-3 px-4">Tim</th>
+                                    <th class="text-left py-3 px-4">Shift</th>
+                                    <th class="text-left py-3 px-4">Petugas Aktif</th>
+                                    <th class="text-left py-3 px-4">Lokasi</th>
+                                    <th class="text-left py-3 px-4">Foto</th>
+                                    <th class="text-left py-3 px-4">Status</th>
+                                    <th class="text-left py-3 px-4">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportsTableBody">
+                                <!-- Table rows will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Feed Posts Management Table -->
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+                    <h3 class="text-xl font-bold text-white mb-4">Manajemen Postingan Feed</h3>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-white">
+                            <thead>
+                                <tr class="border-b border-white/20">
+                                    <th class="text-left py-3 px-4">Tanggal</th>
+                                    <th class="text-left py-3 px-4">Penulis</th>
+                                    <th class="text-left py-3 px-4">Tim</th>
+                                    <th class="text-left py-3 px-4">Konten</th>
+                                    <th class="text-left py-3 px-4">Tipe</th>
+                                    <th class="text-left py-3 px-4">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="feedTableBody">
+                                <!-- Table rows will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Report Modal -->
+    <div id="editReportModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 max-w-2xl w-full mx-4">
+            <h3 class="text-xl font-bold text-white mb-4">Edit Laporan</h3>
+            
+            <form id="editReportForm" class="space-y-4">
+                <input type="hidden" id="editReportId">
+                
+                <div class="grid md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-white/90 mb-2">Tanggal Berlaku</label>
-                        <input type="date" id="infoDate" class="w-full px-4 py-3 glass-effect border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-white transition-all duration-300" required>
+                        <label class="block text-white font-medium mb-1 text-sm">Tim</label>
+                        <input type="text" id="editTeam" class="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-white font-medium mb-1 text-sm">Shift</label>
+                        <input type="text" id="editShift" class="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
                     </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-white/90 mb-2">Judul</label>
-                    <input type="text" id="infoTitle" class="w-full px-4 py-3 glass-effect border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-white placeholder-white/50 transition-all duration-300" placeholder="Masukkan judul informasi..." required>
+                
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-white font-medium mb-1 text-sm">Petugas Aktif</label>
+                        <input type="text" id="editActiveOfficers" class="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-white font-medium mb-1 text-sm">Petugas Tidak Aktif</label>
+                        <input type="text" id="editInactiveOfficers" class="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                    </div>
                 </div>
+                
                 <div>
-                    <label class="block text-sm font-medium text-white/90 mb-2">Isi Informasi</label>
-                    <textarea id="infoContent" rows="4" class="w-full px-4 py-3 glass-effect border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-white placeholder-white/50 transition-all duration-300 resize-none" placeholder="Tulis informasi lengkap di sini..." required></textarea>
+                    <label class="block text-white font-medium mb-1 text-sm">Lokasi</label>
+                    <input type="text" id="editLocation" class="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
                 </div>
-                <div class="flex gap-4">
-                    <button type="submit" id="infoSubmitBtn" class="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 font-semibold shadow-2xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i class="fas fa-paper-plane mr-2"></i>Posting
+                
+                <div>
+                    <label class="block text-white font-medium mb-1 text-sm">Deskripsi</label>
+                    <textarea id="editDescription" rows="3" class="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none text-sm"></textarea>
+                </div>
+                
+                <div class="flex space-x-4">
+                    <button type="button" onclick="saveReportEdit()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors text-sm">
+                        💾 Simpan
                     </button>
-                    <button type="button" onclick="clearInfoForm()" class="px-6 py-3 bg-gray-500/30 text-white rounded-xl hover:bg-gray-500/50 transition-all duration-300 backdrop-blur-sm border border-gray-400/30">
-                        <i class="fas fa-eraser mr-2"></i>Bersihkan
+                    <button type="button" onclick="closeEditModal()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors text-sm">
+                        ❌ Batal
                     </button>
                 </div>
             </form>
         </div>
-
-        <!-- Information Feed -->
-        <div class="space-y-6" id="infoFeed">
-            <!-- Information posts will be populated here -->
-        </div>
-
-        <!-- Empty State -->
-        <div id="emptyInfoState" class="glass-effect rounded-2xl shadow-2xl p-12 text-center fade-in">
-            <div class="floating">
-                <i class="fas fa-info-circle text-6xl text-blue-400/50 mb-4"></i>
-            </div>
-            <h3 class="text-xl font-semibold text-white mb-2">Belum Ada Informasi</h3>
-            <p class="text-white/70">Informasi dan jadwal akan ditampilkan di sini secara real-time</p>
-        </div>
     </div>
 
-    <!-- Admin Page -->
-    <div id="adminPage" class="max-w-7xl mx-auto mobile-padding p-6 hidden relative z-10">
-        <div class="mb-6 fade-in flex justify-between items-center">
-            <h2 class="text-2xl font-bold text-white flex items-center">
-                Admin Panel
-                <span id="firebaseIndicator" class="firebase-indicator sync-online" title="Firebase Connected"></span>
-                <div id="connectionStatus" class="connection-status connection-online">
-                    <i class="fas fa-wifi text-xs"></i>
-                </div>
-            </h2>
-            <button onclick="logoutAdmin()" class="px-4 py-2 bg-red-500/30 text-white rounded-lg hover:bg-red-500/50 transition-all duration-300 backdrop-blur-sm border border-red-400/30">
-                <i class="fas fa-sign-out-alt mr-2"></i>Logout
-            </button>
-        </div>
-
-        <!-- Firebase Status Dashboard -->
-        <div class="glass-effect rounded-2xl shadow-2xl p-6 mb-8 fade-in">
-            <h3 class="text-xl font-semibold text-white mb-4">
-                <i class="fas fa-database mr-2 text-purple-400"></i>Firebase Status Dashboard
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white/10 rounded-xl p-4 border border-white/20">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-white/80 text-sm">Database Status</p>
-                            <p id="dbStatus" class="text-green-400 font-bold">Connected</p>
-                        </div>
-                        <i class="fas fa-database text-green-400 text-2xl"></i>
+    <!-- Edit Post Modal -->
+    <div id="editPostModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 max-w-2xl w-full mx-4">
+            <h3 class="text-xl font-bold text-white mb-4">Edit Postingan</h3>
+            
+            <form id="editPostForm" class="space-y-4">
+                <input type="hidden" id="editPostId">
+                
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-white font-medium mb-1 text-sm">Penulis</label>
+                        <input type="text" id="editPostAuthor" class="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-white font-medium mb-1 text-sm">Tim</label>
+                        <input type="text" id="editPostTeam" class="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
                     </div>
                 </div>
-                <div class="bg-white/10 rounded-xl p-4 border border-white/20">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-white/80 text-sm">Storage Usage</p>
-                            <p id="storageUsage" class="text-blue-400 font-bold">0 MB</p>
-                        </div>
-                        <i class="fas fa-cloud text-blue-400 text-2xl"></i>
-                    </div>
+                
+                <div>
+                    <label class="block text-white font-medium mb-1 text-sm">Konten</label>
+                    <textarea id="editPostContent" rows="3" class="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none text-sm"></textarea>
                 </div>
-                <div class="bg-white/10 rounded-xl p-4 border border-white/20">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-white/80 text-sm">Total Records</p>
-                            <p id="totalRecords" class="text-purple-400 font-bold">0</p>
-                        </div>
-                        <i class="fas fa-chart-bar text-purple-400 text-2xl"></i>
-                    </div>
+                
+                <div>
+                    <label class="block text-white font-medium mb-1 text-sm">Lokasi</label>
+                    <input type="text" id="editPostLocation" class="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
                 </div>
-            </div>
-        </div>
-
-        <!-- Export Controls -->
-        <div class="glass-effect rounded-2xl shadow-2xl p-6 mb-8 fade-in">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h3 class="text-lg font-semibold text-white">
-                    <i class="fas fa-download mr-2 text-green-400"></i>Export Data
-                </h3>
-                <div class="flex flex-wrap gap-3">
-                    <button onclick="exportToExcel()" class="px-4 py-2 bg-green-600/30 text-green-300 rounded-lg hover:bg-green-600/50 transition-colors backdrop-blur-sm border border-green-400/30">
-                        <i class="fas fa-file-excel mr-2"></i>Export Excel
+                
+                <div class="flex space-x-4">
+                    <button type="button" onclick="savePostEdit()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors text-sm">
+                        💾 Simpan
                     </button>
-                    <button onclick="exportToCSV()" class="px-4 py-2 bg-blue-600/30 text-blue-300 rounded-lg hover:bg-blue-600/50 transition-colors backdrop-blur-sm border border-blue-400/30">
-                        <i class="fas fa-file-csv mr-2"></i>Export CSV
-                    </button>
-                    <button onclick="backupData()" class="px-4 py-2 bg-purple-600/30 text-purple-300 rounded-lg hover:bg-purple-600/50 transition-colors backdrop-blur-sm border border-purple-400/30">
-                        <i class="fas fa-shield-alt mr-2"></i>Backup Data
+                    <button type="button" onclick="closeEditPostModal()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors text-sm">
+                        ❌ Batal
                     </button>
                 </div>
-            </div>
-        </div>
-
-        <!-- Admin Reports Management -->
-        <div class="glass-effect rounded-2xl shadow-2xl overflow-hidden fade-in">
-            <div class="px-6 py-4 border-b border-white/20">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <h3 class="text-lg font-semibold text-white">
-                        <i class="fas fa-edit mr-2 text-green-400"></i>Kelola Semua Laporan (Real-time)
-                    </h3>
-                    <div class="flex gap-2">
-                        <button onclick="refreshData()" class="px-3 py-1 bg-blue-600/30 text-blue-300 rounded text-sm hover:bg-blue-600/50 backdrop-blur-sm border border-blue-400/30">
-                            <i class="fas fa-sync-alt mr-1"></i>Refresh
-                        </button>
-                        <button onclick="deleteAllReports()" class="px-3 py-1 bg-red-600/30 text-red-300 rounded text-sm hover:bg-red-600/50 backdrop-blur-sm border border-red-400/30">
-                            <i class="fas fa-trash mr-1"></i>Hapus Semua
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-white/20">
-                    <thead class="glass-effect">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Waktu</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Tim</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Petugas</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Lokasi</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="adminReportsTableBody" class="divide-y divide-white/10">
-                        <!-- Admin reports will be populated here -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modals -->
-    <!-- Report Detail Modal -->
-    <div id="reportModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div class="p-6 border-b border-gray-200">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-xl font-semibold text-gray-800">Detail Laporan</h3>
-                    <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
-                </div>
-            </div>
-            <div id="modalContent" class="p-6">
-                <!-- Modal content will be populated here -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Camera Modal -->
-    <div id="cameraModal" class="fixed inset-0 bg-black bg-opacity-90 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl max-w-2xl w-full">
-            <div class="p-6 border-b border-gray-200">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-xl font-semibold text-gray-800">
-                        <i class="fas fa-camera mr-2 text-blue-600"></i>Ambil Foto Kerja Live
-                    </h3>
-                    <button onclick="closeCameraModal()" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="p-6">
-                <div class="text-center">
-                    <video id="cameraVideo" class="w-full max-w-md mx-auto rounded-lg border-2 border-gray-300 mb-4" autoplay playsinline></video>
-                    <canvas id="cameraCanvas" class="hidden"></canvas>
-                    <div class="flex justify-center gap-4">
-                        <button onclick="capturePhoto()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-camera mr-2"></i>Ambil Foto
-                        </button>
-                        <button onclick="switchCamera()" id="switchCameraBtn" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                            <i class="fas fa-sync-alt mr-2"></i>Ganti Kamera
-                        </button>
-                        <button onclick="closeCameraModal()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
-                            <i class="fas fa-times mr-2"></i>Batal
-                        </button>
-                    </div>
-                    <p class="text-sm text-gray-600 mt-3">
-                        <i class="fas fa-info-circle mr-1"></i>
-                        Foto akan diambil secara real-time dari kamera perangkat
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Location Map Modal -->
-    <div id="locationModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div class="p-6 border-b border-gray-200">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-xl font-semibold text-gray-800">Lokasi Real-time Petugas</h3>
-                    <button onclick="closeLocationModal()" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="p-6">
-                <div id="mapContainer" class="w-full h-96 bg-gray-100 rounded-lg border-2 border-gray-300 relative overflow-hidden">
-                    <!-- Interactive Map will be rendered here -->
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <div class="text-center">
-                            <i class="fas fa-map text-4xl text-gray-400 mb-2"></i>
-                            <p class="text-gray-600">Peta Interaktif</p>
-                            <p class="text-sm text-gray-500">Menampilkan lokasi petugas secara real-time</p>
-                        </div>
-                    </div>
-                    <!-- Location markers will be added dynamically -->
-                    <div id="locationMarkers" class="absolute inset-0"></div>
-                </div>
-                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <h4 class="font-semibold text-gray-800 mb-2">Lokasi Saat Ini</h4>
-                        <div id="currentLocationDisplay" class="text-sm text-gray-600">
-                            <p>Koordinat: <span id="currentCoords">Belum diambil</span></p>
-                            <p>Akurasi: <span id="currentAccuracy">-</span></p>
-                            <p>Waktu: <span id="currentTime">-</span></p>
-                        </div>
-                    </div>
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <h4 class="font-semibold text-gray-800 mb-2">Statistik Lokasi</h4>
-                        <div class="text-sm text-gray-600">
-                            <p>Total Laporan Hari Ini: <span id="todayLocationCount">0</span></p>
-                            <p>Petugas Aktif: <span id="activeOfficersCount">0</span></p>
-                            <p>Area Tercover: <span id="coveredAreas">0</span></p>
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-4 flex gap-4">
-                    <button onclick="refreshLocationData()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                        <i class="fas fa-sync-alt mr-2"></i>Refresh Data
-                    </button>
-                    <button onclick="exportLocationData()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                        <i class="fas fa-download mr-2"></i>Export Lokasi
-                    </button>
-                    <button onclick="closeLocationModal()" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
-                        <i class="fas fa-times mr-2"></i>Tutup
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Login Modal -->
-    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl max-w-md w-full">
-            <div class="p-6 border-b border-gray-200">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-xl font-semibold text-gray-800">Login Admin Panel</h3>
-                    <button onclick="closeLoginModal()" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="p-6">
-                <form id="loginForm">
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
-                        <input type="text" id="loginUsername" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
-                    </div>
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                        <input type="password" id="loginPassword" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
-                    </div>
-                    <div id="loginError" class="hidden mb-4 p-3 bg-red-100 border border-red-400 rounded-lg">
-                        <div class="flex items-center">
-                            <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
-                            <span class="text-red-800 text-sm">Username atau password salah!</span>
-                        </div>
-                    </div>
-                    <div class="flex gap-4">
-                        <button type="submit" class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-semibold">
-                            <i class="fas fa-sign-in-alt mr-2"></i>Login
-                        </button>
-                        <button type="button" onclick="closeLoginModal()" class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
-                            Batal
-                        </button>
-                    </div>
-                </form>
-            </div>
+            </form>
         </div>
     </div>
 
     <script>
+        /*
+        ========================================
+        PANDUAN SETUP FIREBASE UNTUK DATA PERMANEN
+        ========================================
+        
+        LANGKAH 1: BUAT PROYEK FIREBASE
+        - Kunjungi https://console.firebase.google.com
+        - Klik "Add project" atau "Tambah proyek"
+        - Beri nama proyek (contoh: ppsu-pisbar-app)
+        - Ikuti langkah-langkah setup
+        
+        LANGKAH 2: AKTIFKAN FIRESTORE DATABASE
+        - Di dashboard Firebase, pilih "Firestore Database"
+        - Klik "Create database"
+        - Pilih "Start in test mode" (untuk development)
+        - Pilih lokasi server (pilih yang terdekat dengan Indonesia)
+        
+        LANGKAH 3: DAPATKAN KONFIGURASI
+        - Pilih "Project settings" (ikon gear)
+        - Scroll ke bawah, pilih "Web app" (</>)
+        - Daftarkan app dengan nama (contoh: PPSU-Pisbar-Web)
+        - Copy konfigurasi yang diberikan
+        
+        LANGKAH 4: GANTI KONFIGURASI DI ATAS
+        - Ganti firebaseConfig di atas dengan data dari Firebase Console
+        - Pastikan semua field terisi dengan benar
+        
+        LANGKAH 5: ATUR ATURAN FIRESTORE (OPSIONAL)
+        - Di Firestore Database, pilih tab "Rules"
+        - Untuk development, gunakan:
+          rules_version = '2';
+          service cloud.firestore {
+            match /databases/{database}/documents {
+              match /{document=**} {
+                allow read, write: if true;
+              }
+            }
+          }
+        
+        SETELAH SETUP SELESAI:
+        ✅ Data akan tersimpan permanen di cloud
+        ✅ Dapat diakses dari semua device dan browser
+        ✅ Data real-time sync otomatis
+        ✅ Hanya admin yang bisa hapus data
+        */
+        
         // Global variables
+        let currentUser = null;
         let reports = [];
-        let infoPosts = [];
-        let notifications = [];
-        let isAdminLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
-        let currentStream = null;
-        let currentFacingMode = 'environment';
-        let capturedPhotoData = null;
-        let isOnline = navigator.onLine;
-        let firebaseConnected = false;
-        let currentLocation = null;
-        let locationWatchId = null;
-        let locationHistory = [];
-
-        // Officer names list
-        const officers = [
-            'Achmad Rosidi', 'Ade Kurniawan', 'Al Azahar', 'Alwi', 'Arif Abdul Rahman',
-            'Asep', 'Chandra Darmawan', 'Daday Sukandar', 'Dea Sabilah Handriyani',
-            'Deni Arcis', 'Dewo Panca Pamungkas', 'Dimas Herwinto Pradana', 'Eris Sumiadi',
-            'Fida Marzuki Putra', 'Herdinsah', 'Hermansyah', 'Hikmatun Nisa', 'Ihsan Muttaqien',
-            'Ilham Prayitno Yudo', 'Indra Jaya', 'Irfan Mahadi', 'M. Yusuf', 'Maryanto',
-            'Mohamad Irwan Yulianto', 'Muhammad Khomeini', 'Nur Iman', 'Nuryana', 'Puji Lestari',
-            'Pujiyanto', 'Rafly Nugraha', 'Rahman', 'Rahmat Agustio', 'Reynaldi Saputra',
-            'Rizky Prasetia', 'Rohmah', 'Sabar Minggudi', 'Siti Marsah', 'Suhanda',
-            'Supardi', 'Suwandi', 'Syaiful Huda', 'Tri Julianto', 'Wiyono Fauzy'
-        ];
-
-        // Initialize application when Firebase is ready
-        window.initializeApp = function() {
-            document.getElementById('loadingOverlay').classList.add('hidden');
-            populateOfficerSelects();
+        let feedPosts = [];
+        let cameraStream = null;
+        let capturedPhoto = null;
+        let reportsListener = null;
+        let feedListener = null;
+        
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            showPage('home');
+            setupEventListeners();
             
-            // Try to setup Firebase listeners
+            // Test Firebase connection
+            setTimeout(() => {
+                testFirebaseConnection();
+            }, 1000);
+            
+            initializeFirebaseListeners();
+        });
+        
+        // Test Firebase connection
+        async function testFirebaseConnection() {
             try {
-                setupFirebaseListeners();
-                firebaseConnected = true;
-                updateFirebaseStatus('online');
+                // Test dengan membaca collection
+                const testQuery = query(collection(window.db, 'reports'));
+                await getDocs(testQuery);
+                
+                showNotification('🎉 Firebase terhubung! Proyek: aplikasi-laporan-ppsu', 'success');
+                
+                // Update status di halaman
+                updateConnectionStatus(true);
+                
             } catch (error) {
-                console.warn('Firebase not available, running in demo mode:', error);
-                firebaseConnected = false;
-                updateFirebaseStatus('demo');
-                loadDemoData();
-            }
-            
-            updateConnectionStatus();
-            showPage('dashboard');
-            startRealTimeClock();
-            
-            // Set default date for info form
-            const today = new Date().toISOString().split('T')[0];
-            const infoDateElement = document.getElementById('infoDate');
-            if (infoDateElement) {
-                infoDateElement.value = today;
-            }
-
-            // Setup online/offline listeners
-            window.addEventListener('online', () => {
-                isOnline = true;
-                updateConnectionStatus();
-            });
-
-            window.addEventListener('offline', () => {
-                isOnline = false;
-                updateConnectionStatus();
-            });
-        };
-
-        // Update Firebase status indicator
-        function updateFirebaseStatus(status) {
-            const firebaseElement = document.getElementById('firebaseIndicator');
-            if (!firebaseElement) return;
-            
-            switch(status) {
-                case 'online':
-                    firebaseElement.className = 'firebase-indicator sync-online';
-                    firebaseElement.title = 'Firebase Connected';
-                    break;
-                case 'syncing':
-                    firebaseElement.className = 'firebase-indicator sync-syncing';
-                    firebaseElement.title = 'Syncing to Firebase...';
-                    break;
-                case 'offline':
-                    firebaseElement.className = 'firebase-indicator sync-offline';
-                    firebaseElement.title = 'Firebase Offline';
-                    break;
-                case 'demo':
-                    firebaseElement.className = 'firebase-indicator sync-offline';
-                    firebaseElement.title = 'Demo Mode - Firebase not available';
-                    break;
+                console.log('Firebase connection test failed:', error);
+                showNotification('⚠️ Gagal terhubung Firebase. Periksa aturan Firestore.', 'error');
+                updateConnectionStatus(false);
             }
         }
-
-        // Load demo data when Firebase is not available
-        function loadDemoData() {
-            // Demo reports
-            reports = [
-                {
-                    id: 1,
-                    firebaseKey: 'demo1',
-                    timestamp: new Date().toISOString(),
-                    tim: 'Tim A',
-                    petugasAktif: 'Achmad Rosidi',
-                    petugasTidakAktif: '',
-                    deskripsi: 'Pembersihan area taman',
-                    lokasi: 'Taman Pisangan Baru',
-                    jamKerja: '08:00',
-                    istirahat: '12:00',
-                    catatanTarget: 'Target selesai sore hari',
-                    foto: null,
-                    status: 'Aktif'
-                }
-            ];
+        
+        function updateConnectionStatus(connected) {
+            // Tambahkan indikator status di navigation
+            const nav = document.querySelector('nav .container');
+            let statusIndicator = document.getElementById('firebaseStatus');
             
-            // Demo info posts
-            infoPosts = [
-                {
-                    id: 1,
-                    firebaseKey: 'info1',
-                    timestamp: new Date().toISOString(),
-                    type: 'announcement',
-                    date: new Date().toISOString().split('T')[0],
-                    title: 'Selamat Datang di Firebase Edition',
-                    content: 'Sistem laporan PPSU kini menggunakan Firebase untuk sinkronisasi real-time. Semua data akan tersimpan di cloud dan dapat diakses dari berbagai perangkat.',
-                    author: 'Admin'
-                }
-            ];
+            if (!statusIndicator) {
+                statusIndicator = document.createElement('div');
+                statusIndicator.id = 'firebaseStatus';
+                statusIndicator.className = 'text-xs px-2 py-1 rounded-full';
+                nav.appendChild(statusIndicator);
+            }
             
-            updateDashboard();
-            updateInfoFeed();
-        }
-
-        // Setup Firebase real-time listeners
-        function setupFirebaseListeners() {
-            if (!window.firebaseModules) return;
-            
-            const { ref, onValue } = window.firebaseModules;
-            const database = window.firebaseDB;
-
-            // Listen to reports
-            const reportsRef = ref(database, 'reports');
-            onValue(reportsRef, (snapshot) => {
-                const data = snapshot.val();
-                reports = data ? Object.keys(data).map(key => ({
-                    firebaseKey: key,
-                    ...data[key]
-                })) : [];
-                updateDashboard();
-                updateAdminReports();
-            });
-
-            // Listen to info posts
-            const infoRef = ref(database, 'infoPosts');
-            onValue(infoRef, (snapshot) => {
-                const data = snapshot.val();
-                infoPosts = data ? Object.keys(data).map(key => ({
-                    firebaseKey: key,
-                    ...data[key]
-                })).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)) : [];
-                updateInfoFeed();
-            });
-
-            // Listen to notifications
-            const notificationsRef = ref(database, 'notifications');
-            onValue(notificationsRef, (snapshot) => {
-                const data = snapshot.val();
-                notifications = data ? Object.keys(data).map(key => ({
-                    firebaseKey: key,
-                    ...data[key]
-                })).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)) : [];
-                updateNotificationBadge();
-            });
-        }
-
-        // Update connection status
-        function updateConnectionStatus() {
-            const statusElement = document.getElementById('connectionStatus');
-            if (isOnline) {
-                statusElement.className = 'connection-status connection-online';
-                statusElement.innerHTML = '<i class="fas fa-wifi text-xs"></i>';
-                statusElement.title = 'Terhubung ke Internet';
+            if (connected) {
+                statusIndicator.className = 'text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-300 border border-green-500/30';
+                statusIndicator.innerHTML = '🟢 Firebase Connected';
             } else {
-                statusElement.className = 'connection-status connection-offline';
-                statusElement.innerHTML = '<i class="fas fa-wifi-slash text-xs"></i>';
-                statusElement.title = 'Tidak ada koneksi internet';
+                statusIndicator.className = 'text-xs px-2 py-1 rounded-full bg-red-500/20 text-red-300 border border-red-500/30';
+                statusIndicator.innerHTML = '🔴 Firebase Disconnected';
             }
         }
+        
+        // Initialize Firebase real-time listeners
+        function initializeFirebaseListeners() {
+            try {
+                // Cek koneksi Firebase terlebih dahulu
+                showNotification('🔄 Menghubungkan ke Firebase "aplikasi-laporan-ppsu"...', 'info');
+                
+                // Listen to reports collection
+                const reportsQuery = query(collection(window.db, 'reports'), orderBy('createdAt', 'desc'));
+                reportsListener = onSnapshot(reportsQuery, (snapshot) => {
+                    reports = [];
+                    snapshot.forEach((doc) => {
+                        reports.push({ id: doc.id, ...doc.data() });
+                    });
+                    updateAdminStats();
+                    updateReportsTable();
+                    
+                    // Tampilkan status koneksi berhasil
+                    if (reports.length >= 0) {
+                        showNotification('✅ Berhasil terhubung ke Firebase! Semua data tersimpan permanen di cloud.', 'success');
+                    }
+                }, (error) => {
+                    console.log('Error listening to reports:', error);
+                    showNotification('❌ Gagal terhubung Firebase. Periksa konfigurasi atau koneksi internet.', 'error');
+                    showFirebaseSetupReminder();
+                });
+                
+                // Listen to feed collection
+                const feedQuery = query(collection(window.db, 'feed'), orderBy('createdAt', 'desc'));
+                feedListener = onSnapshot(feedQuery, (snapshot) => {
+                    feedPosts = [];
+                    snapshot.forEach((doc) => {
+                        feedPosts.push({ id: doc.id, ...doc.data() });
+                    });
+                    loadFeedPosts();
+                    updateFeedTable();
+                }, (error) => {
+                    console.log('Error listening to feed:', error);
+                    showNotification('❌ Gagal memuat feed dari Firebase.', 'error');
+                });
+                
+            } catch (error) {
+                console.log('Firebase initialization error:', error);
+                showNotification('⚠️ Firebase belum dikonfigurasi. Data hanya tersimpan lokal.', 'info');
+                showFirebaseSetupReminder();
+                
+                // Fallback to localStorage
+                reports = JSON.parse(localStorage.getItem('ppsu_reports') || '[]');
+                feedPosts = JSON.parse(localStorage.getItem('ppsu_feed') || '[]');
+                loadFeedPosts();
+                updateFeedTable();
+            }
+        }
+        
+        function showFirebaseSetupReminder() {
+            setTimeout(() => {
+                alert(`🔧 SETUP FIREBASE DIPERLUKAN
 
-        // Real-time clock function
-        function startRealTimeClock() {
-            function updateClock() {
-                const now = new Date();
-                const options = {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    timeZone: 'Asia/Jakarta'
-                };
-                const timeString = now.toLocaleDateString('id-ID', options);
-                const clockElement = document.getElementById('realTimeClock');
-                if (clockElement) {
-                    clockElement.textContent = timeString;
+Untuk memastikan data tersimpan permanen di semua device:
+
+1. Buka https://console.firebase.google.com
+2. Buat proyek baru atau pilih proyek existing
+3. Aktifkan Firestore Database
+4. Ganti konfigurasi Firebase di kode dengan data proyek Anda
+5. Refresh halaman setelah konfigurasi selesai
+
+Saat ini data hanya tersimpan lokal di browser ini.`);
+            }, 3000);
+        }
+        
+        function setupEventListeners() {
+            // Report form submit
+            document.getElementById('reportForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                submitReport();
+            });
+            
+            // Post form submit
+            document.getElementById('postForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                submitPost();
+            });
+            
+            // Admin login form
+            document.getElementById('adminLoginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                adminLogin();
+            });
+            
+            // Filter change
+            document.getElementById('filterDate')?.addEventListener('change', updateReportsTable);
+            document.getElementById('filterPeriod')?.addEventListener('change', updateReportsTable);
+        }
+        
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            const mobileOverlay = document.getElementById('mobileOverlay');
+            const hamburger = document.querySelector('.hamburger');
+            
+            mobileMenu.classList.toggle('active');
+            mobileOverlay.classList.toggle('active');
+            hamburger.classList.toggle('active');
+        }
+        
+        function showPage(pageId) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.add('hidden');
+            });
+            
+            // Show requested page
+            if (pageId === 'admin') {
+                if (currentUser && currentUser.role === 'admin') {
+                    document.getElementById('adminDashboard').classList.remove('hidden');
+                    updateAdminStats();
+                    updateReportsTable();
+                    updateFeedTable();
+                } else {
+                    document.getElementById('adminLoginPage').classList.remove('hidden');
                 }
+            } else {
+                document.getElementById(pageId + 'Page').classList.remove('hidden');
             }
             
-            updateClock();
-            setInterval(updateClock, 1000);
+            // Add fade-in animation
+            setTimeout(() => {
+                document.querySelector('.page:not(.hidden)').classList.add('fade-in');
+            }, 50);
         }
-
-        // Populate officer select dropdowns
-        function populateOfficerSelects() {
-            const selects = ['petugasAktif'];
-            selects.forEach(selectId => {
-                const select = document.getElementById(selectId);
-                if (select) {
-                    // Clear existing options except the first one
-                    while (select.children.length > 1) {
-                        select.removeChild(select.lastChild);
+        
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        
+                        // Simulate reverse geocoding (in real app, use Google Maps API)
+                        const locations = [
+                            'Jl. Sudirman No. 123, Jakarta Pusat',
+                            'Jl. Thamrin No. 456, Jakarta Pusat',
+                            'Jl. Gatot Subroto No. 789, Jakarta Selatan',
+                            'Jl. Kuningan No. 321, Jakarta Selatan'
+                        ];
+                        
+                        const randomLocation = locations[Math.floor(Math.random() * locations.length)];
+                        document.getElementById('location').value = `${randomLocation} (${lat.toFixed(6)}, ${lon.toFixed(6)})`;
+                        
+                        showNotification('Lokasi berhasil diambil!', 'success');
+                    },
+                    function(error) {
+                        showNotification('Gagal mengambil lokasi. Pastikan GPS aktif.', 'error');
                     }
+                );
+            } else {
+                showNotification('Geolocation tidak didukung browser ini.', 'error');
+            }
+        }
+        
+        function getPostLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        
+                        const locations = [
+                            'Jl. Sudirman No. 123, Jakarta Pusat',
+                            'Jl. Thamrin No. 456, Jakarta Pusat',
+                            'Jl. Gatot Subroto No. 789, Jakarta Selatan',
+                            'Jl. Kuningan No. 321, Jakarta Selatan'
+                        ];
+                        
+                        const randomLocation = locations[Math.floor(Math.random() * locations.length)];
+                        document.getElementById('postLocation').value = `${randomLocation} (${lat.toFixed(6)}, ${lon.toFixed(6)})`;
+                        
+                        showNotification('Lokasi berhasil diambil!', 'success');
+                    },
+                    function(error) {
+                        showNotification('Gagal mengambil lokasi. Pastikan GPS aktif.', 'error');
+                    }
+                );
+            } else {
+                showNotification('Geolocation tidak didukung browser ini.', 'error');
+            }
+        }
+        
+        function startCamera() {
+            // Camera functionality placeholder
+            showNotification('Fitur kamera akan segera tersedia!', 'info');
+        }
+        
+        function capturePhoto() {
+            // Capture functionality placeholder
+            showNotification('Foto berhasil diambil!', 'success');
+        }
+        
+        function retakePhoto() {
+            // Retake functionality placeholder
+            showNotification('Siap untuk foto ulang!', 'info');
+        }
+        
+        async function submitReport() {
+            const team = document.getElementById('team').value.trim();
+            const shift = document.getElementById('shift').value.trim();
+            const activeOfficers = document.getElementById('activeOfficers').value.trim();
+            const inactiveOfficers = document.getElementById('inactiveOfficers').value.trim();
+            const location = document.getElementById('location').value.trim();
+            const description = document.getElementById('description').value.trim();
+            const photo = document.getElementById('previewImage').src || '';
+            
+            // Validate required fields (inactive officers is optional)
+            if (!team || !shift || !activeOfficers || !location || !description) {
+                showNotification('Mohon lengkapi semua field wajib! (Petugas tidak aktif opsional)', 'error');
+                return;
+            }
+            
+            const formData = {
+                team: team,
+                shift: shift,
+                activeOfficers: activeOfficers,
+                inactiveOfficers: inactiveOfficers,
+                location: location,
+                photo: photo,
+                description: description,
+                createdAt: serverTimestamp(),
+                date: new Date().toISOString()
+            };
+            
+            try {
+                // Save report to Firebase
+                const reportRef = await addDoc(collection(window.db, 'reports'), formData);
+                
+                // Create feed post
+                const feedPost = {
+                    author: activeOfficers.split(',')[0].trim(),
+                    team: team,
+                    content: `Laporan Kerja: ${description}`,
+                    location: location,
+                    photo: photo,
+                    likes: 0,
+                    comments: [],
+                    type: 'report',
+                    createdAt: serverTimestamp(),
+                    date: new Date().toISOString()
+                };
+                
+                await addDoc(collection(window.db, 'feed'), feedPost);
+                
+                // Reset form
+                document.getElementById('reportForm').reset();
+                document.getElementById('photoPreview').classList.add('hidden');
+                
+                showNotification('Laporan berhasil dikirim dan tersimpan di database!', 'success');
+                
+            } catch (error) {
+                console.log('Error saving to Firebase:', error);
+                // Fallback to localStorage
+                const localData = {
+                    id: Date.now(),
+                    ...formData,
+                    date: new Date().toISOString()
+                };
+                
+                let localReports = JSON.parse(localStorage.getItem('ppsu_reports') || '[]');
+                let localFeed = JSON.parse(localStorage.getItem('ppsu_feed') || '[]');
+                
+                localReports.push(localData);
+                localStorage.setItem('ppsu_reports', JSON.stringify(localReports));
+                
+                const localFeedPost = {
+                    id: Date.now(),
+                    author: activeOfficers.split(',')[0].trim(),
+                    team: team,
+                    content: `Laporan Kerja: ${description}`,
+                    location: location,
+                    photo: photo,
+                    likes: 0,
+                    comments: [],
+                    type: 'report',
+                    date: new Date().toISOString()
+                };
+                
+                localFeed.unshift(localFeedPost);
+                localStorage.setItem('ppsu_feed', JSON.stringify(localFeed));
+                
+                // Reset form
+                document.getElementById('reportForm').reset();
+                document.getElementById('photoPreview').classList.add('hidden');
+                
+                showNotification('Laporan tersimpan lokal (offline mode)', 'info');
+            }
+        }
+        
+        async function submitPost() {
+            const author = document.getElementById('postAuthor').value.trim();
+            const team = document.getElementById('postTeam').value;
+            const content = document.getElementById('postContent').value.trim();
+            const location = document.getElementById('postLocation').value.trim();
+            
+            // Validate required fields
+            if (!author || !team || !content) {
+                showNotification('Mohon lengkapi nama, tim, dan isi postingan!', 'error');
+                return;
+            }
+            
+            // Create new post
+            const newPost = {
+                author: author,
+                team: team,
+                content: content,
+                location: location || '',
+                photo: '',
+                likes: 0,
+                comments: [],
+                type: 'post',
+                createdAt: serverTimestamp(),
+                date: new Date().toISOString()
+            };
+            
+            try {
+                // Save to Firebase
+                await addDoc(collection(window.db, 'feed'), newPost);
+                
+                // Reset form
+                document.getElementById('postForm').reset();
+                
+                // Show success notification
+                showNotification('Postingan berhasil dipublikasi ke database!', 'success');
+                
+            } catch (error) {
+                console.log('Error saving post to Firebase:', error);
+                // Fallback to localStorage
+                const localPost = {
+                    id: Date.now(),
+                    ...newPost,
+                    date: new Date().toISOString()
+                };
+                
+                let localFeed = JSON.parse(localStorage.getItem('ppsu_feed') || '[]');
+                localFeed.unshift(localPost);
+                localStorage.setItem('ppsu_feed', JSON.stringify(localFeed));
+                
+                // Reset form
+                document.getElementById('postForm').reset();
+                
+                showNotification('Postingan tersimpan lokal (offline mode)', 'info');
+            }
+        }
+        
+        function loadFeedPosts() {
+            const container = document.getElementById('feedContainer');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            if (feedPosts.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-white/70 py-12">
+                        <div class="text-6xl mb-4">📝</div>
+                        <p class="text-xl">Belum ada postingan atau laporan</p>
+                        <p>Buat postingan pertama Anda atau submit laporan untuk melihat feed aktivitas</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            feedPosts.forEach((post, index) => {
+                const postElement = document.createElement('div');
+                postElement.className = 'bg-white/10 backdrop-blur-md rounded-xl p-4 md:p-6 border border-white/20 card-hover';
+                
+                // Add animation for new posts
+                if (index === 0) {
+                    postElement.classList.add('post-animation');
+                }
+                
+                const postTypeIcon = post.type === 'report' ? '📋' : '📢';
+                const postTypeLabel = post.type === 'report' ? 'Laporan Kerja' : 'Postingan';
+                
+                postElement.innerHTML = `
+                    <div class="flex items-start space-x-4">
+                        <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                            <span class="text-white font-bold">${post.author.charAt(0).toUpperCase()}</span>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <h4 class="text-white font-semibold">${post.author}</h4>
+                                <span class="text-white/60 text-sm">• ${post.team}</span>
+                                <span class="text-white/60 text-sm">• ${new Date(post.date).toLocaleString('id-ID')}</span>
+                                <span class="bg-white/20 text-white/80 px-2 py-1 rounded text-xs flex items-center">
+                                    ${postTypeIcon} ${postTypeLabel}
+                                </span>
+                            </div>
+                            <p class="text-white/90 mb-3">${post.content}</p>
+                            ${post.location ? `
+                                <div class="text-white/70 text-sm mb-3 flex items-center">
+                                    <span class="mr-1">📍</span>
+                                    ${post.location}
+                                </div>
+                            ` : ''}
+                            ${post.photo ? `<img src="${post.photo}" class="w-full max-w-md rounded-lg mb-4">` : ''}
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-4 text-white/70">
+                                    <button onclick="likePost('${post.id}')" class="flex items-center space-x-1 hover:text-red-400 transition-colors">
+                                        <span>❤️</span>
+                                        <span>${post.likes}</span>
+                                    </button>
+                                    <button onclick="toggleComments('${post.id}')" class="flex items-center space-x-1 hover:text-blue-400 transition-colors">
+                                        <span>💬</span>
+                                        <span>${post.comments.length}</span>
+                                    </button>
+                                </div>
+                                ${currentUser && currentUser.role === 'admin' ? `
+                                    <button onclick="deleteFeedPost('${post.id}')" class="text-red-400 hover:text-red-300 transition-colors text-sm">
+                                        🗑️ Hapus
+                                    </button>
+                                ` : ''}
+                            </div>
+                            <div id="comments-${post.id}" class="hidden mt-4 space-y-3">
+                                <div class="space-y-2">
+                                    ${post.comments.map(comment => `
+                                        <div class="bg-white/5 rounded-lg p-3">
+                                            <div class="flex items-center space-x-2 mb-1">
+                                                <span class="text-white font-medium text-sm">${comment.author}</span>
+                                                <span class="text-white/50 text-xs">${new Date(comment.date).toLocaleString('id-ID')}</span>
+                                            </div>
+                                            <p class="text-white/80 text-sm">${comment.text}</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div class="flex space-x-2">
+                                    <input type="text" id="comment-input-${post.id}" placeholder="Tulis komentar..." class="flex-1 px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                    <button onclick="addComment('${post.id}')" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg text-sm hover:shadow-lg transition-all">
+                                        Kirim
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(postElement);
+            });
+        }
+        
+        async function likePost(postId) {
+            try {
+                const post = feedPosts.find(p => p.id === postId);
+                if (post) {
+                    // Update locally first for immediate feedback
+                    post.likes++;
                     
-                    officers.forEach(officer => {
-                        const option = document.createElement('option');
-                        option.value = officer;
-                        option.textContent = officer;
-                        option.className = 'bg-gray-800';
-                        select.appendChild(option);
+                    // Update in Firebase
+                    const postRef = doc(window.db, 'feed', postId);
+                    await updateDoc(postRef, { likes: post.likes });
+                    
+                    showNotification('Post disukai!', 'success');
+                }
+            } catch (error) {
+                console.log('Error updating likes:', error);
+                showNotification('Gagal menyukai post', 'error');
+            }
+        }
+        
+        function toggleComments(postId) {
+            const commentsDiv = document.getElementById(`comments-${postId}`);
+            commentsDiv.classList.toggle('hidden');
+        }
+        
+        async function addComment(postId) {
+            const input = document.getElementById(`comment-input-${postId}`);
+            const commentText = input.value.trim();
+            
+            if (!commentText) return;
+            
+            try {
+                const post = feedPosts.find(p => p.id === postId);
+                if (post) {
+                    const newComment = {
+                        id: Date.now(),
+                        author: 'Petugas',
+                        text: commentText,
+                        date: new Date().toISOString()
+                    };
+                    
+                    // Update locally first
+                    post.comments.push(newComment);
+                    
+                    // Update in Firebase
+                    const postRef = doc(window.db, 'feed', postId);
+                    await updateDoc(postRef, { comments: post.comments });
+                    
+                    input.value = '';
+                    showNotification('Komentar ditambahkan!', 'success');
+                }
+            } catch (error) {
+                console.log('Error adding comment:', error);
+                showNotification('Gagal menambahkan komentar', 'error');
+            }
+        }
+        
+        function adminLogin() {
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
+            
+            if (username === 'elfida' && password === 'Pis212bar@') {
+                currentUser = { username: 'elfida', role: 'admin' };
+                showPage('admin');
+                showNotification('Login berhasil!', 'success');
+            } else {
+                showNotification('Username atau password salah!', 'error');
+            }
+        }
+        
+        function logout() {
+            currentUser = null;
+            showPage('home');
+            showNotification('Logout berhasil!', 'success');
+        }
+        
+        function updateAdminStats() {
+            const today = new Date().toDateString();
+            const todayReports = reports.filter(r => new Date(r.date).toDateString() === today);
+            
+            document.getElementById('totalReports').textContent = reports.length;
+            document.getElementById('todayReports').textContent = todayReports.length;
+            document.getElementById('totalPosts').textContent = feedPosts.length;
+            
+            const activeOfficers = new Set();
+            reports.forEach(r => {
+                if (r.activeOfficers) {
+                    r.activeOfficers.split(',').forEach(officer => {
+                        activeOfficers.add(officer.trim());
                     });
                 }
             });
+            document.getElementById('activeOfficersCount').textContent = activeOfficers.size;
         }
-
-        // Toggle mobile menu
-        function toggleMobileMenu() {
-            const mobileMenu = document.getElementById('mobileMenu');
-            const mobileBackdrop = document.getElementById('mobileBackdrop');
-            
-            if (mobileMenu.classList.contains('-translate-x-full')) {
-                mobileMenu.classList.remove('-translate-x-full');
-                mobileBackdrop.classList.remove('hidden');
-            } else {
-                mobileMenu.classList.add('-translate-x-full');
-                mobileBackdrop.classList.add('hidden');
-            }
-        }
-
-        // Admin authentication functions
-        function checkAdminAccess() {
-            if (isAdminLoggedIn) {
-                showPage('admin');
-            } else {
-                document.getElementById('loginModal').classList.remove('hidden');
-            }
-        }
-
-        function closeLoginModal() {
-            document.getElementById('loginModal').classList.add('hidden');
-            document.getElementById('loginForm').reset();
-            document.getElementById('loginError').classList.add('hidden');
-        }
-
-        // Handle login form submission
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const username = document.getElementById('loginUsername').value;
-            const password = document.getElementById('loginPassword').value;
-            
-            if (username === 'elfida' && password === 'pis212oK') {
-                isAdminLoggedIn = true;
-                localStorage.setItem('adminLoggedIn', 'true');
-                closeLoginModal();
-                showPage('admin');
-            } else {
-                document.getElementById('loginError').classList.remove('hidden');
-            }
-        });
-
-        function logoutAdmin() {
-            if (confirm('Apakah Anda yakin ingin logout dari Admin Panel?')) {
-                isAdminLoggedIn = false;
-                localStorage.removeItem('adminLoggedIn');
-                showPage('dashboard');
-                alert('Anda telah berhasil logout dari Admin Panel.');
-            }
-        }
-
-        // Show/hide pages
-        function showPage(page) {
-            document.getElementById('dashboardPage').classList.toggle('hidden', page !== 'dashboard');
-            document.getElementById('infoPage').classList.toggle('hidden', page !== 'info');
-            document.getElementById('adminPage').classList.toggle('hidden', page !== 'admin');
-            
-            // Update button states
-            const dashboardBtn = document.getElementById('dashboardBtn');
-            const infoBtn = document.getElementById('infoBtn');
-            const adminBtn = document.getElementById('adminBtn');
-            
-            if (dashboardBtn) {
-                dashboardBtn.classList.toggle('bg-blue-600', page === 'dashboard');
-                dashboardBtn.classList.toggle('bg-white/20', page !== 'dashboard');
-            }
-            if (infoBtn) {
-                infoBtn.classList.toggle('bg-purple-600', page === 'info');
-                infoBtn.classList.toggle('bg-white/20', page !== 'info');
-            }
-            if (adminBtn) {
-                adminBtn.classList.toggle('bg-green-600', page === 'admin');
-                adminBtn.classList.toggle('bg-white/20', page !== 'admin');
-            }
-            
-            if (page === 'info') {
-                updateInfoFeed();
-                // Show post section only for admin
-                const postSection = document.getElementById('postInfoSection');
-                if (postSection) {
-                    postSection.classList.toggle('hidden', !isAdminLoggedIn);
-                }
-            }
-            
-            // Connection status is now part of admin header
-        }
-
-        // Handle report form submission
-        document.getElementById('reportForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            // Validate GPS location is required
-            if (!currentLocation) {
-                alert('⚠️ GPS Lokasi Wajib!\n\nAnda harus mengambil lokasi GPS terlebih dahulu untuk verifikasi lokasi kerja.\n\nKlik tombol "Ambil GPS (Wajib)" untuk melanjutkan.');
-                return;
-            }
-
-            // Validate manual location input
-            const manualLocation = document.getElementById('lokasi').value.trim();
-            if (!manualLocation) {
-                alert('⚠️ Nama Lokasi Wajib!\n\nSilakan ketik nama lokasi area kerja secara manual.\n\nContoh: "Jl. Pisangan Baru Raya" atau "Taman Pisangan Baru"');
-                document.getElementById('lokasi').focus();
-                return;
-            }
-            
-            const submitBtn = document.getElementById('submitBtn');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<div class="loading-spinner inline-block mr-2"></div>Mengirim...';
-
-            try {
-                updateFirebaseStatus('syncing');
-                
-                let photoURL = null;
-                
-                // Upload photo if exists and Firebase is connected
-                if (capturedPhotoData && firebaseConnected) {
-                    photoURL = await uploadPhoto(capturedPhotoData);
-                }
-
-                // Create report object
-                const report = {
-                    id: Date.now(),
-                    timestamp: new Date().toISOString(),
-                    tim: document.getElementById('tim').value,
-                    petugasAktif: document.getElementById('petugasAktif').value,
-                    petugasTidakAktif: document.getElementById('petugasTidakAktif').value,
-                    deskripsi: document.getElementById('deskripsi').value,
-                    lokasi: document.getElementById('lokasi').value,
-                    jamKerja: document.getElementById('jamKerja').value,
-                    istirahat: document.getElementById('istirahat').value,
-                    catatanTarget: document.getElementById('catatanTarget').value,
-                    foto: photoURL,
-                    status: 'Aktif',
-                    // Location data
-                    coordinates: currentLocation ? {
-                        latitude: currentLocation.latitude,
-                        longitude: currentLocation.longitude,
-                        accuracy: currentLocation.accuracy,
-                        timestamp: currentLocation.timestamp
-                    } : null,
-                    locationAddress: currentLocation ? currentLocation.address : null
-                };
-
-                if (firebaseConnected) {
-                    await saveReportToFirebase(report);
-                    alert('Laporan berhasil dikirim!');
-                } else {
-                    // Demo mode - add to local array
-                    report.firebaseKey = 'demo' + Date.now();
-                    reports.unshift(report);
-                    updateDashboard();
-                    alert('Laporan dikirim (Demo Mode)');
-                }
-                
-                // Reset form and photo
-                document.getElementById('reportForm').reset();
-                removePhoto();
-                
-                // Reset location state
-                currentLocation = null;
-                document.getElementById('locationInfo').classList.add('hidden');
-                document.getElementById('locationWarning').classList.remove('hidden');
-                
-                // Reset location button
-                const locationBtn = document.getElementById('locationBtn');
-                locationBtn.classList.remove('bg-green-600/50', 'border-green-500/50');
-                locationBtn.classList.add('bg-red-500/30', 'border-red-400/30');
-                document.getElementById('locationBtnText').innerHTML = 'Ambil GPS (Wajib)';
-                
-                updateFirebaseStatus(firebaseConnected ? 'online' : 'demo');
-                
-            } catch (error) {
-                console.error('Error saving report:', error);
-                alert('Gagal mengirim laporan. Silakan coba lagi.');
-                updateFirebaseStatus('offline');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
-            }
-        });
-
-        // Save report to Firebase
-        async function saveReportToFirebase(report) {
-            if (!window.firebaseModules) throw new Error('Firebase not available');
-            
-            const { ref, push } = window.firebaseModules;
-            const database = window.firebaseDB;
-            
-            const reportsRef = ref(database, 'reports');
-            await push(reportsRef, report);
-        }
-
-        // Upload photo to Firebase Storage
-        async function uploadPhoto(photoData) {
-            if (!window.firebaseModules) throw new Error('Firebase Storage not available');
-            
-            const { storageRef, uploadBytes, getDownloadURL } = window.firebaseModules;
-            const storage = window.firebaseStorage;
-            
-            // Convert base64 to blob
-            const response = await fetch(photoData);
-            const blob = await response.blob();
-            
-            // Create unique filename
-            const filename = `photos/${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
-            const photoRef = storageRef(storage, filename);
-            
-            // Upload file
-            await uploadBytes(photoRef, blob);
-            
-            // Get download URL
-            const downloadURL = await getDownloadURL(photoRef);
-            return downloadURL;
-        }
-
-        // Handle info form submission
-        document.getElementById('infoForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const submitBtn = document.getElementById('infoSubmitBtn');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<div class="loading-spinner inline-block mr-2"></div>Mengirim...';
-
-            try {
-                updateFirebaseStatus('syncing');
-                
-                const infoPost = {
-                    id: Date.now(),
-                    timestamp: new Date().toISOString(),
-                    type: document.getElementById('infoType').value,
-                    date: document.getElementById('infoDate').value,
-                    title: document.getElementById('infoTitle').value,
-                    content: document.getElementById('infoContent').value,
-                    author: 'Admin'
-                };
-
-                if (firebaseConnected) {
-                    await saveInfoPostToFirebase(infoPost);
-                    await createNotification(infoPost);
-                    alert('Informasi berhasil diposting ke Firebase!');
-                } else {
-                    // Demo mode
-                    infoPost.firebaseKey = 'info' + Date.now();
-                    infoPosts.unshift(infoPost);
-                    updateInfoFeed();
-                    alert('Informasi diposting (Demo Mode - Firebase tidak tersedia)');
-                }
-                
-                // Reset form
-                document.getElementById('infoForm').reset();
-                const today = new Date().toISOString().split('T')[0];
-                document.getElementById('infoDate').value = today;
-                
-                updateFirebaseStatus(firebaseConnected ? 'online' : 'demo');
-                
-            } catch (error) {
-                console.error('Error saving info post:', error);
-                alert('Gagal menyimpan informasi. Silakan coba lagi.');
-                updateFirebaseStatus('offline');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
-            }
-        });
-
-        // Save info post to Firebase
-        async function saveInfoPostToFirebase(infoPost) {
-            if (!window.firebaseModules) throw new Error('Firebase not available');
-            
-            const { ref, push } = window.firebaseModules;
-            const database = window.firebaseDB;
-            
-            const infoRef = ref(database, 'infoPosts');
-            await push(infoRef, infoPost);
-        }
-
-        // Create notification
-        async function createNotification(infoPost) {
-            if (!firebaseConnected) return;
-            
-            const typeLabels = {
-                schedule: 'Jadwal Kerja',
-                announcement: 'Pengumuman',
-                info: 'Informasi Umum',
-                urgent: 'Penting/Mendesak'
-            };
-
-            const typeIcons = {
-                schedule: 'fa-calendar',
-                announcement: 'fa-bullhorn',
-                info: 'fa-info-circle',
-                urgent: 'fa-exclamation-triangle'
-            };
-
-            const notification = {
-                id: Date.now(),
-                timestamp: new Date().toISOString(),
-                type: infoPost.type,
-                title: `${typeLabels[infoPost.type]} Baru`,
-                message: infoPost.title,
-                icon: typeIcons[infoPost.type],
-                postId: infoPost.id,
-                read: false
-            };
-
-            const { ref, push } = window.firebaseModules;
-            const database = window.firebaseDB;
-            
-            const notificationsRef = ref(database, 'notifications');
-            await push(notificationsRef, notification);
-            
-            // Show browser notification if supported
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification(`${typeLabels[infoPost.type]} Baru`, {
-                    body: infoPost.title,
-                    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>',
-                    tag: 'ppsu-info'
-                });
-            }
-        }
-
-        // Toggle notification panel
-        function toggleNotifications() {
-            const panel = document.getElementById('notificationPanel');
-            
-            if (panel.classList.contains('hidden')) {
-                panel.classList.remove('hidden');
-                updateNotificationList();
-                
-                // Request notification permission if not granted
-                if ('Notification' in window && Notification.permission === 'default') {
-                    Notification.requestPermission();
-                }
-            } else {
-                panel.classList.add('hidden');
-            }
-        }
-
-        // Update notification badge
-        function updateNotificationBadge() {
-            const unreadCount = notifications.filter(n => !n.read).length;
-            const badges = ['notificationBadge', 'notificationBadgeDesktop'];
-            
-            badges.forEach(badgeId => {
-                const badge = document.getElementById(badgeId);
-                if (badge) {
-                    if (unreadCount > 0) {
-                        badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
-                        badge.classList.remove('hidden');
-                    } else {
-                        badge.classList.add('hidden');
-                    }
-                }
-            });
-        }
-
-        // Update notification list
-        function updateNotificationList() {
-            const notificationList = document.getElementById('notificationList');
-            const emptyState = document.getElementById('emptyNotifications');
-            
-            if (notifications.length === 0) {
-                notificationList.innerHTML = '';
-                emptyState.classList.remove('hidden');
-                return;
-            }
-            
-            emptyState.classList.add('hidden');
-            notificationList.innerHTML = '';
-            
-            notifications.slice(0, 20).forEach(notification => {
-                const notificationElement = document.createElement('div');
-                notificationElement.className = `p-4 border-b border-gray-100 hover:bg-gray-50 transition-all duration-300 cursor-pointer ${!notification.read ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}`;
-                
-                const typeColors = {
-                    schedule: 'text-blue-500',
-                    announcement: 'text-yellow-500',
-                    info: 'text-green-500',
-                    urgent: 'text-red-500'
-                };
-                
-                notificationElement.innerHTML = `
-                    <div class="flex items-start space-x-2">
-                        <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <i class="fas ${notification.icon} ${typeColors[notification.type]} text-xs"></i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-start justify-between gap-2">
-                                <div class="flex-1 min-w-0">
-                                    <h4 class="text-sm font-semibold text-gray-800 leading-tight">${notification.title}</h4>
-                                    <p class="text-sm text-gray-600 mt-0.5 leading-tight break-words">${notification.message}</p>
-                                </div>
-                                ${!notification.read ? '<div class="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1"></div>' : ''}
-                            </div>
-                            <p class="text-xs text-gray-400 mt-1">${new Date(notification.timestamp).toLocaleString('id-ID')}</p>
-                        </div>
-                    </div>
-                `;
-                
-                notificationElement.onclick = () => {
-                    if (firebaseConnected && notification.firebaseKey) {
-                        markNotificationAsRead(notification.firebaseKey);
-                    }
-                    showPage('info');
-                    toggleNotifications();
-                };
-                
-                notificationList.appendChild(notificationElement);
-            });
-        }
-
-        // Mark notification as read
-        async function markNotificationAsRead(firebaseKey) {
-            if (!firebaseConnected) return;
-            
-            try {
-                const { ref, update } = window.firebaseModules;
-                const database = window.firebaseDB;
-                
-                const notificationRef = ref(database, `notifications/${firebaseKey}`);
-                await update(notificationRef, { read: true });
-            } catch (error) {
-                console.error('Error marking notification as read:', error);
-            }
-        }
-
-        // Clear info form
-        function clearInfoForm() {
-            document.getElementById('infoForm').reset();
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('infoDate').value = today;
-        }
-
-        // Update info feed
-        function updateInfoFeed() {
-            const infoFeed = document.getElementById('infoFeed');
-            const emptyState = document.getElementById('emptyInfoState');
-            
-            if (infoPosts.length === 0) {
-                infoFeed.innerHTML = '';
-                emptyState.classList.remove('hidden');
-                return;
-            }
-            
-            emptyState.classList.add('hidden');
-            infoFeed.innerHTML = '';
-            
-            infoPosts.forEach((post, index) => {
-                const postElement = document.createElement('div');
-                postElement.className = `glass-effect rounded-2xl shadow-2xl p-6 fade-in border-l-4`;
-                postElement.style.animationDelay = `${index * 0.1}s`;
-                
-                // Add border color based on type
-                const borderColors = {
-                    schedule: 'border-l-blue-400',
-                    announcement: 'border-l-yellow-400',
-                    info: 'border-l-green-400',
-                    urgent: 'border-l-red-400'
-                };
-                postElement.classList.add(borderColors[post.type]);
-                
-                const typeIcons = {
-                    schedule: '📅',
-                    announcement: '📢',
-                    info: 'ℹ️',
-                    urgent: '🚨'
-                };
-                
-                const typeLabels = {
-                    schedule: 'Jadwal Kerja',
-                    announcement: 'Pengumuman',
-                    info: 'Informasi Umum',
-                    urgent: 'Penting/Mendesak'
-                };
-                
-                const typeColors = {
-                    schedule: 'text-blue-400',
-                    announcement: 'text-yellow-400',
-                    info: 'text-green-400',
-                    urgent: 'text-red-400'
-                };
-                
-                postElement.innerHTML = `
-                    <div class="flex items-start justify-between mb-4">
-                        <div class="flex items-center space-x-3 flex-1 min-w-0">
-                            <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
-                                ${typeIcons[post.type]}
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <h3 class="text-xl font-bold text-white mb-2">${post.title}</h3>
-                                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-white/70">
-                                    <span class="flex items-center">
-                                        <i class="fas fa-tag mr-1 ${typeColors[post.type]}"></i>
-                                        ${typeLabels[post.type]}
-                                    </span>
-                                    <span class="flex items-center">
-                                        <i class="fas fa-calendar mr-1 text-blue-400"></i>
-                                        ${new Date(post.date).toLocaleDateString('id-ID')}
-                                    </span>
-                                    <span class="flex items-center">
-                                        <i class="fas fa-user mr-1 text-purple-400"></i>
-                                        ${post.author}
-                                    </span>
-                                    ${firebaseConnected ? '<span class="flex items-center"><i class="fas fa-cloud mr-1 text-green-400"></i>Firebase</span>' : '<span class="flex items-center"><i class="fas fa-desktop mr-1 text-gray-400"></i>Demo</span>'}
-                                </div>
-                            </div>
-                        </div>
-                        ${isAdminLoggedIn && firebaseConnected ? `
-                            <div class="flex space-x-2 flex-shrink-0 ml-4">
-                                <button onclick="deleteInfoPost('${post.firebaseKey}')" class="p-3 bg-red-500/30 text-red-300 rounded-lg hover:bg-red-500/50 transition-all duration-300 border border-red-400/30" title="Hapus Informasi">
-                                    <i class="fas fa-trash text-base"></i>
-                                </button>
-                            </div>
-                        ` : ''}
-                    </div>
-                    <div class="text-white/90 leading-relaxed whitespace-pre-wrap">${post.content}</div>
-                    <div class="mt-4 pt-4 border-t border-white/20 text-xs text-white/60">
-                        <i class="fas fa-clock mr-1"></i>
-                        Diposting ${new Date(post.timestamp).toLocaleString('id-ID')}
-                    </div>
-                `;
-                
-                infoFeed.appendChild(postElement);
-            });
-        }
-
-        // Delete info post
-        async function deleteInfoPost(firebaseKey) {
-            if (confirm('Apakah Anda yakin ingin menghapus informasi ini?')) {
-                try {
-                    if (firebaseConnected) {
-                        const { ref, remove } = window.firebaseModules;
-                        const database = window.firebaseDB;
-                        
-                        const postRef = ref(database, `infoPosts/${firebaseKey}`);
-                        await remove(postRef);
-                        
-                        alert('Informasi berhasil dihapus dari Firebase!');
-                    } else {
-                        // Demo mode
-                        infoPosts = infoPosts.filter(p => p.firebaseKey !== firebaseKey);
-                        updateInfoFeed();
-                        alert('Informasi dihapus (Demo Mode)');
-                    }
-                } catch (error) {
-                    console.error('Error deleting info post:', error);
-                    alert('Gagal menghapus informasi. Silakan coba lagi.');
-                }
-            }
-        }
-
-        // Update dashboard statistics and table
-        function updateDashboard() {
-            const today = new Date().toDateString();
-            const todayReports = reports.filter(r => new Date(r.timestamp).toDateString() === today);
-            const reportedOfficers = new Set(todayReports.map(r => r.petugasAktif));
-            const pendingCount = officers.length - reportedOfficers.size;
-            const complianceRate = Math.round((reportedOfficers.size / officers.length) * 100);
-
-            // Update dashboard stats
-            const todayReportsElement = document.getElementById('todayReports');
-            const pendingReportsElement = document.getElementById('pendingReports');
-            const complianceRateElement = document.getElementById('complianceRate');
-            
-            if (todayReportsElement) todayReportsElement.textContent = todayReports.length;
-            if (pendingReportsElement) pendingReportsElement.textContent = pendingCount;
-            if (complianceRateElement) complianceRateElement.textContent = complianceRate + '%';
-
-            // Update reports table
+        
+        function updateReportsTable() {
             const tbody = document.getElementById('reportsTableBody');
-            if (tbody) {
-                tbody.innerHTML = '';
-
-                reports.slice(-10).reverse().forEach(report => {
-                    const row = document.createElement('tr');
-                    row.className = 'fade-in hover:bg-white/5 transition-all duration-300';
-                    row.innerHTML = `
-                        <td class="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-white/90">
-                            ${new Date(report.timestamp).toLocaleString('id-ID')}
-                        </td>
-                        <td class="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-white/90">${report.tim}</td>
-                        <td class="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-white/90">${report.petugasAktif}</td>
-                        <td class="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-white/90">${report.lokasi}</td>
-                        <td class="px-4 md:px-6 py-4 whitespace-nowrap">
-                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-400/20 text-green-400 border border-green-400/30">
-                                ${report.status}
-                            </span>
-                        </td>
-                        <td class="px-4 md:px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button onclick="viewReport('${report.firebaseKey}')" class="text-blue-400 hover:text-blue-300 transition-colors duration-300">
-                                <i class="fas fa-eye mr-1"></i> Lihat
-                            </button>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
-            }
-        }
-
-        // Update admin reports table
-        function updateAdminReports() {
-            const tbody = document.getElementById('adminReportsTableBody');
             if (!tbody) return;
             
             tbody.innerHTML = '';
-
-            // Update Firebase status in admin panel
-            const dbStatus = document.getElementById('dbStatus');
-            const storageUsage = document.getElementById('storageUsage');
-            const totalRecords = document.getElementById('totalRecords');
             
-            if (dbStatus) {
-                dbStatus.textContent = firebaseConnected ? 'Connected' : 'Demo Mode';
-                dbStatus.className = firebaseConnected ? 'text-green-400 font-bold' : 'text-yellow-400 font-bold';
-            }
-            
-            if (storageUsage) {
-                const dataSize = JSON.stringify(reports).length + JSON.stringify(infoPosts).length;
-                const sizeInKB = Math.round(dataSize / 1024);
-                storageUsage.textContent = sizeInKB < 1024 ? `${sizeInKB} KB` : `${(sizeInKB / 1024).toFixed(2)} MB`;
-            }
-            
-            if (totalRecords) {
-                totalRecords.textContent = reports.length + infoPosts.length;
-            }
-
-            reports.slice().reverse().forEach(report => {
+            reports.forEach(report => {
                 const row = document.createElement('tr');
-                row.className = 'hover:bg-white/5 transition-all duration-300';
+                row.className = 'border-b border-white/10 hover:bg-white/5 transition-colors';
                 row.innerHTML = `
-                    <td class="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-white/90">
-                        ${new Date(report.timestamp).toLocaleString('id-ID')}
+                    <td class="py-3 px-4">${new Date(report.date).toLocaleDateString('id-ID')}</td>
+                    <td class="py-3 px-4">${report.team}</td>
+                    <td class="py-3 px-4">${report.shift}</td>
+                    <td class="py-3 px-4">${report.activeOfficers}</td>
+                    <td class="py-3 px-4">${report.location.substring(0, 30)}...</td>
+                    <td class="py-3 px-4">
+                        ${report.photo ? `<img src="${report.photo}" class="w-12 h-12 object-cover rounded cursor-pointer" onclick="viewPhoto('${report.photo}')" title="Klik untuk melihat foto">` : '<span class="text-white/50">Tidak ada foto</span>'}
                     </td>
-                    <td class="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-white/90">${report.tim}</td>
-                    <td class="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-white/90">${report.petugasAktif}</td>
-                    <td class="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-white/90">${report.lokasi}</td>
-                    <td class="px-4 md:px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-400/20 text-green-400 border border-green-400/30">
-                            ${report.status}
-                        </span>
+                    <td class="py-3 px-4">
+                        <span class="bg-green-500 text-white px-2 py-1 rounded text-sm">Selesai</span>
                     </td>
-                    <td class="px-4 md:px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button onclick="viewReport('${report.firebaseKey}')" class="text-blue-400 hover:text-blue-300 mr-3">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        ${firebaseConnected ? `<button onclick="deleteReport('${report.firebaseKey}')" class="text-red-400 hover:text-red-300">
-                            <i class="fas fa-trash"></i>
-                        </button>` : ''}
+                    <td class="py-3 px-4">
+                        <div class="flex space-x-2">
+                            <button onclick="editReport('${report.id}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                                ✏️ Edit
+                            </button>
+                            <button onclick="deleteReport('${report.id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                                🗑️ Hapus
+                            </button>
+                        </div>
                     </td>
                 `;
                 tbody.appendChild(row);
             });
         }
-
-        // View report details
-        function viewReport(firebaseKey) {
-            const report = reports.find(r => r.firebaseKey === firebaseKey);
-            if (!report) return;
-
-            const modal = document.getElementById('reportModal');
-            const content = document.getElementById('modalContent');
+        
+        function updateFeedTable() {
+            const tbody = document.getElementById('feedTableBody');
+            if (!tbody) return;
             
-            content.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <h4 class="font-semibold text-gray-800 mb-2">Informasi Dasar</h4>
-                        <div class="space-y-3">
-                            <div><span class="font-medium">Tim:</span> ${report.tim}</div>
-                            <div><span class="font-medium">Petugas Aktif:</span> ${report.petugasAktif}</div>
-                            <div><span class="font-medium">Petugas Tidak Aktif:</span> ${report.petugasTidakAktif || '-'}</div>
-                            <div><span class="font-medium">Lokasi:</span> ${report.lokasi}</div>
-                            <div><span class="font-medium">Jam Kerja:</span> ${report.jamKerja}</div>
-                            <div><span class="font-medium">Istirahat:</span> ${report.istirahat || '-'}</div>
+            tbody.innerHTML = '';
+            
+            feedPosts.forEach(post => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-white/10 hover:bg-white/5 transition-colors';
+                row.innerHTML = `
+                    <td class="py-3 px-4">${new Date(post.date).toLocaleDateString('id-ID')}</td>
+                    <td class="py-3 px-4">${post.author}</td>
+                    <td class="py-3 px-4">${post.team}</td>
+                    <td class="py-3 px-4">${post.content.substring(0, 50)}...</td>
+                    <td class="py-3 px-4">
+                        <span class="bg-${post.type === 'report' ? 'blue' : 'purple'}-500 text-white px-2 py-1 rounded text-sm">
+                            ${post.type === 'report' ? 'Laporan' : 'Postingan'}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="flex space-x-2">
+                            <button onclick="editPost('${post.id}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                                ✏️ Edit
+                            </button>
+                            <button onclick="deleteFeedPost('${post.id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                                🗑️ Hapus
+                            </button>
                         </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function editReport(reportId) {
+            const report = reports.find(r => r.id === reportId);
+            if (!report) return;
+            
+            document.getElementById('editReportId').value = reportId;
+            document.getElementById('editTeam').value = report.team;
+            document.getElementById('editShift').value = report.shift;
+            document.getElementById('editActiveOfficers').value = report.activeOfficers;
+            document.getElementById('editInactiveOfficers').value = report.inactiveOfficers || '';
+            document.getElementById('editLocation').value = report.location;
+            document.getElementById('editDescription').value = report.description;
+            
+            document.getElementById('editReportModal').classList.remove('hidden');
+        }
+        
+        function editPost(postId) {
+            const post = feedPosts.find(p => p.id === postId);
+            if (!post) return;
+            
+            document.getElementById('editPostId').value = postId;
+            document.getElementById('editPostAuthor').value = post.author;
+            document.getElementById('editPostTeam').value = post.team;
+            document.getElementById('editPostContent').value = post.content;
+            document.getElementById('editPostLocation').value = post.location || '';
+            
+            document.getElementById('editPostModal').classList.remove('hidden');
+        }
+        
+        function closeEditModal() {
+            document.getElementById('editReportModal').classList.add('hidden');
+        }
+        
+        function closeEditPostModal() {
+            document.getElementById('editPostModal').classList.add('hidden');
+        }
+        
+        async function saveReportEdit() {
+            const reportId = document.getElementById('editReportId').value;
+            const team = document.getElementById('editTeam').value.trim();
+            const shift = document.getElementById('editShift').value.trim();
+            const activeOfficers = document.getElementById('editActiveOfficers').value.trim();
+            const inactiveOfficers = document.getElementById('editInactiveOfficers').value.trim();
+            const location = document.getElementById('editLocation').value.trim();
+            const description = document.getElementById('editDescription').value.trim();
+            
+            if (!team || !shift || !activeOfficers || !location || !description) {
+                showNotification('Mohon lengkapi semua field wajib!', 'error');
+                return;
+            }
+            
+            const updatedData = {
+                team: team,
+                shift: shift,
+                activeOfficers: activeOfficers,
+                inactiveOfficers: inactiveOfficers,
+                location: location,
+                description: description
+            };
+            
+            try {
+                await updateDoc(doc(window.db, 'reports', reportId), updatedData);
+                closeEditModal();
+                showNotification('Laporan berhasil diperbarui!', 'success');
+            } catch (error) {
+                console.log('Error updating report:', error);
+                showNotification('Gagal memperbarui laporan', 'error');
+            }
+        }
+        
+        async function savePostEdit() {
+            const postId = document.getElementById('editPostId').value;
+            const author = document.getElementById('editPostAuthor').value.trim();
+            const team = document.getElementById('editPostTeam').value.trim();
+            const content = document.getElementById('editPostContent').value.trim();
+            const location = document.getElementById('editPostLocation').value.trim();
+            
+            if (!author || !team || !content) {
+                showNotification('Mohon lengkapi nama, tim, dan konten!', 'error');
+                return;
+            }
+            
+            const updatedData = {
+                author: author,
+                team: team,
+                content: content,
+                location: location
+            };
+            
+            try {
+                await updateDoc(doc(window.db, 'feed', postId), updatedData);
+                closeEditPostModal();
+                showNotification('Postingan berhasil diperbarui!', 'success');
+            } catch (error) {
+                console.log('Error updating post:', error);
+                showNotification('Gagal memperbarui postingan', 'error');
+            }
+        }
+        
+        async function deleteReport(reportId) {
+            if (!confirm('Apakah Anda yakin ingin menghapus laporan ini?')) {
+                return;
+            }
+            
+            try {
+                // Delete from Firebase
+                await deleteDoc(doc(window.db, 'reports', reportId));
+                
+                // Also delete related feed post
+                const relatedFeedPost = feedPosts.find(post => post.type === 'report' && post.content.includes('Laporan Kerja'));
+                if (relatedFeedPost && relatedFeedPost.id) {
+                    try {
+                        await deleteDoc(doc(window.db, 'feed', relatedFeedPost.id));
+                    } catch (error) {
+                        console.log('Error deleting related feed post:', error);
+                    }
+                }
+                
+                showNotification('Laporan berhasil dihapus dari database!', 'success');
+                
+            } catch (error) {
+                console.log('Error deleting from Firebase:', error);
+                showNotification('Gagal menghapus dari database. Coba lagi.', 'error');
+            }
+        }
+        
+        async function deleteFeedPost(postId) {
+            if (!confirm('Apakah Anda yakin ingin menghapus postingan ini?')) {
+                return;
+            }
+            
+            try {
+                await deleteDoc(doc(window.db, 'feed', postId));
+                showNotification('Postingan berhasil dihapus!', 'success');
+            } catch (error) {
+                console.log('Error deleting feed post:', error);
+                showNotification('Gagal menghapus postingan. Coba lagi.', 'error');
+            }
+        }
+        
+        function exportToExcel() {
+            const ws = XLSX.utils.json_to_sheet(reports.map(r => ({
+                'Tanggal': new Date(r.date).toLocaleDateString('id-ID'),
+                'Tim': r.team,
+                'Shift': r.shift,
+                'Petugas Aktif': r.activeOfficers,
+                'Petugas Tidak Aktif': r.inactiveOfficers,
+                'Lokasi': r.location,
+                'Deskripsi': r.description
+            })));
+            
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Laporan Kerja');
+            XLSX.writeFile(wb, `Laporan_PPSU_${new Date().toISOString().split('T')[0]}.xlsx`);
+            
+            showNotification('File Excel berhasil diunduh!', 'success');
+        }
+        
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFontSize(16);
+            doc.text('Laporan Kerja PPSU-Pisbar-App', 20, 20);
+            
+            let y = 40;
+            reports.forEach((report, index) => {
+                if (y > 250) {
+                    doc.addPage();
+                    y = 20;
+                }
+                
+                doc.setFontSize(12);
+                doc.text(`${index + 1}. ${new Date(report.date).toLocaleDateString('id-ID')} - ${report.team}`, 20, y);
+                y += 10;
+                doc.text(`   Shift: ${report.shift}`, 20, y);
+                y += 10;
+                doc.text(`   Petugas: ${report.activeOfficers}`, 20, y);
+                y += 10;
+                doc.text(`   Lokasi: ${report.location.substring(0, 60)}`, 20, y);
+                y += 15;
+            });
+            
+            doc.save(`Laporan_PPSU_${new Date().toISOString().split('T')[0]}.pdf`);
+            showNotification('File PDF berhasil diunduh!', 'success');
+        }
+        
+        function viewPhoto(photoSrc) {
+            // Create modal to view photo
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4';
+            modal.onclick = () => modal.remove();
+            
+            modal.innerHTML = `
+                <div class="max-w-4xl max-h-full">
+                    <img src="${photoSrc}" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl">
+                    <div class="text-center mt-4">
+                        <button onclick="this.parentElement.parentElement.remove()" class="bg-white/20 text-white px-4 py-2 rounded-lg hover:bg-white/30 transition-colors">
+                            Tutup
+                        </button>
                     </div>
-                    <div>
-                        <h4 class="font-semibold text-gray-800 mb-2">Detail Pekerjaan</h4>
-                        <div class="space-y-3">
-                            <div><span class="font-medium">Deskripsi:</span><br>${report.deskripsi}</div>
-                            <div><span class="font-medium">Catatan Target:</span><br>${report.catatanTarget || '-'}</div>
-                            <div><span class="font-medium">Status:</span> 
-                                <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm">${report.status}</span>
-                            </div>
-                            <div><span class="font-medium">Sumber:</span> 
-                                <span class="px-2 py-1 ${firebaseConnected ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'} rounded-full text-sm">
-                                    ${firebaseConnected ? 'Firebase' : 'Demo Mode'}
-                                </span>
-                            </div>
-                            ${report.coordinates ? `
-                                <div><span class="font-medium">Koordinat GPS:</span><br>
-                                    <span class="text-sm text-gray-600">
-                                        ${report.coordinates.latitude.toFixed(6)}, ${report.coordinates.longitude.toFixed(6)}<br>
-                                        Akurasi: ±${Math.round(report.coordinates.accuracy)}m<br>
-                                        Waktu GPS: ${new Date(report.coordinates.timestamp).toLocaleString('id-ID')}
-                                    </span>
-                                </div>
-                            ` : '<div><span class="font-medium">Koordinat GPS:</span> Tidak tersedia</div>'}
-                        </div>
-                    </div>
-                    ${report.foto ? `
-                        <div class="md:col-span-2">
-                            <h4 class="font-semibold text-gray-800 mb-2">Foto Kerja (Live Camera)</h4>
-                            <img src="${report.foto}" alt="Foto Kerja" class="max-w-full h-auto rounded-lg shadow-lg">
-                        </div>
-                    ` : ''}
                 </div>
             `;
             
-            modal.classList.remove('hidden');
+            document.body.appendChild(modal);
         }
-
-        // Delete report
-        async function deleteReport(firebaseKey) {
-            if (confirm('Apakah Anda yakin ingin menghapus laporan ini?')) {
-                try {
-                    if (firebaseConnected) {
-                        const { ref, remove } = window.firebaseModules;
-                        const database = window.firebaseDB;
-                        
-                        const reportRef = ref(database, `reports/${firebaseKey}`);
-                        await remove(reportRef);
-                        
-                        alert('Laporan berhasil dihapus dari Firebase!');
-                    } else {
-                        // Demo mode
-                        reports = reports.filter(r => r.firebaseKey !== firebaseKey);
-                        updateDashboard();
-                        updateAdminReports();
-                        alert('Laporan dihapus (Demo Mode)');
-                    }
-                } catch (error) {
-                    console.error('Error deleting report:', error);
-                    alert('Gagal menghapus laporan. Silakan coba lagi.');
-                }
-            }
-        }
-
-        // Close modals
-        function closeModal() {
-            document.getElementById('reportModal').classList.add('hidden');
-        }
-
-        // Camera functions
-        function openCamera(facingMode) {
-            currentFacingMode = facingMode;
-            document.getElementById('cameraModal').classList.remove('hidden');
-            startCamera();
-        }
-
-        function closeCameraModal() {
-            document.getElementById('cameraModal').classList.add('hidden');
-            stopCamera();
-        }
-
-        async function startCamera() {
-            try {
-                const video = document.getElementById('cameraVideo');
-                const constraints = {
-                    video: {
-                        facingMode: currentFacingMode,
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    }
-                };
-
-                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-                video.srcObject = currentStream;
-            } catch (error) {
-                console.error('Error accessing camera:', error);
-                alert('Tidak dapat mengakses kamera. Pastikan izin kamera telah diberikan.');
-            }
-        }
-
-        function stopCamera() {
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
-                currentStream = null;
-            }
-        }
-
-        function switchCamera() {
-            currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
-            stopCamera();
-            startCamera();
-        }
-
-        function capturePhoto() {
-            const video = document.getElementById('cameraVideo');
-            const canvas = document.getElementById('cameraCanvas');
-            const context = canvas.getContext('2d');
-
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0);
-
-            capturedPhotoData = canvas.toDataURL('image/jpeg', 0.8);
+        
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
             
-            // Show preview
-            document.getElementById('previewImage').src = capturedPhotoData;
-            document.getElementById('photoPreview').classList.remove('hidden');
+            notificationText.textContent = message;
             
-            closeCameraModal();
-        }
-
-        function removePhoto() {
-            capturedPhotoData = null;
-            document.getElementById('photoPreview').classList.add('hidden');
-            document.getElementById('previewImage').src = '';
-        }
-
-        // Export functions
-        function exportToExcel() {
-            if (reports.length === 0) {
-                alert('Tidak ada data untuk diekspor');
-                return;
-            }
-
-            const ws = XLSX.utils.json_to_sheet(reports.map(report => ({
-                'Waktu': new Date(report.timestamp).toLocaleString('id-ID'),
-                'Tim': report.tim,
-                'Petugas Aktif': report.petugasAktif,
-                'Petugas Tidak Aktif': report.petugasTidakAktif,
-                'Lokasi': report.lokasi,
-                'Jam Kerja': report.jamKerja,
-                'Istirahat': report.istirahat,
-                'Deskripsi': report.deskripsi,
-                'Catatan Target': report.catatanTarget,
-                'Status': report.status,
-                'Sumber': firebaseConnected ? 'Firebase' : 'Demo'
-            })));
-
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Laporan PPSU');
+            let bgColor = 'bg-green-500';
+            if (type === 'error') bgColor = 'bg-red-500';
+            if (type === 'info') bgColor = 'bg-blue-500';
             
-            const fileName = `Laporan_PPSU_${new Date().toISOString().split('T')[0]}.xlsx`;
-            XLSX.writeFile(wb, fileName);
-        }
-
-        function exportToCSV() {
-            if (reports.length === 0) {
-                alert('Tidak ada data untuk diekspor');
-                return;
-            }
-
-            const csvContent = [
-                ['Waktu', 'Tim', 'Petugas Aktif', 'Petugas Tidak Aktif', 'Lokasi', 'Jam Kerja', 'Istirahat', 'Deskripsi', 'Catatan Target', 'Status', 'Sumber'],
-                ...reports.map(report => [
-                    new Date(report.timestamp).toLocaleString('id-ID'),
-                    report.tim,
-                    report.petugasAktif,
-                    report.petugasTidakAktif,
-                    report.lokasi,
-                    report.jamKerja,
-                    report.istirahat,
-                    report.deskripsi,
-                    report.catatanTarget,
-                    report.status,
-                    firebaseConnected ? 'Firebase' : 'Demo'
-                ])
-            ].map(row => row.map(cell => `"${cell || ''}"`).join(',')).join('\n');
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `Laporan_PPSU_${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        function backupData() {
-            const backupData = {
-                reports: reports,
-                infoPosts: infoPosts,
-                notifications: notifications,
-                timestamp: new Date().toISOString(),
-                source: firebaseConnected ? 'Firebase' : 'Demo'
-            };
-
-            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `Backup_PPSU_${new Date().toISOString().split('T')[0]}.json`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        function refreshData() {
-            if (firebaseConnected) {
-                alert('Data Firebase akan diperbarui secara otomatis (real-time)');
-            } else {
-                alert('Dalam mode demo - data sudah terbaru');
-            }
-        }
-
-        function deleteAllReports() {
-            if (confirm('Apakah Anda yakin ingin menghapus SEMUA laporan? Tindakan ini tidak dapat dibatalkan!')) {
-                if (firebaseConnected) {
-                    // In a real implementation, you would delete from Firebase
-                    alert('Fitur hapus semua data Firebase memerlukan konfirmasi tambahan untuk keamanan.');
-                } else {
-                    reports = [];
-                    updateDashboard();
-                    updateAdminReports();
-                    alert('Semua laporan demo telah dihapus');
-                }
-            }
-        }
-
-        // Location tracking functions
-        function getCurrentLocation() {
-            const locationBtn = document.getElementById('locationBtn');
-            const originalText = locationBtn.innerHTML;
+            notification.className = `notification ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg text-sm`;
+            notification.classList.add('show');
             
-            if (!navigator.geolocation) {
-                alert('Geolocation tidak didukung oleh browser ini.');
-                return;
-            }
-
-            locationBtn.disabled = true;
-            locationBtn.innerHTML = '<div class="loading-spinner inline-block mr-2"></div>Mengambil lokasi...';
-
-            const options = {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 60000
-            };
-
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    const coords = position.coords;
-                    currentLocation = {
-                        latitude: coords.latitude,
-                        longitude: coords.longitude,
-                        accuracy: coords.accuracy,
-                        timestamp: new Date().toISOString()
-                    };
-
-                    // Try to get address from coordinates
-                    try {
-                        const address = await reverseGeocode(coords.latitude, coords.longitude);
-                        currentLocation.address = address;
-                    } catch (error) {
-                        console.warn('Could not get address:', error);
-                        currentLocation.address = `${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`;
-                    }
-
-                    // Don't auto-fill the location input - keep it manual
-                    // User must type the location name manually
-
-                    // Show location info with GPS verification
-                    document.getElementById('locationInfo').classList.remove('hidden');
-                    document.getElementById('locationWarning').classList.add('hidden');
-                    document.getElementById('coordinatesText').textContent = 
-                        `Koordinat: ${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`;
-                    document.getElementById('accuracyText').textContent = 
-                        `Akurasi: ±${Math.round(coords.accuracy)}m`;
-                    document.getElementById('locationTime').textContent = 
-                        `Waktu: ${new Date().toLocaleString('id-ID')}`;
-
-                    // Add to location history
-                    locationHistory.push({
-                        ...currentLocation,
-                        officer: document.getElementById('petugasAktif').value || 'Unknown',
-                        team: document.getElementById('tim').value || 'Unknown'
-                    });
-
-                    // Update button to show success
-                    locationBtn.disabled = false;
-                    locationBtn.classList.remove('bg-red-500/30', 'border-red-400/30');
-                    locationBtn.classList.add('bg-green-600/50', 'border-green-500/50');
-                    document.getElementById('locationBtnText').innerHTML = '<i class="fas fa-check mr-1"></i>GPS Tersimpan';
-
-                    // Keep the success state permanently
-                    // Don't revert back to original state
-                },
-                (error) => {
-                    let errorMessage = 'Gagal mengambil lokasi: ';
-                    switch(error.code) {
-                        case error.PERMISSION_DENIED:
-                            errorMessage += 'Izin lokasi ditolak. Silakan aktifkan GPS dan berikan izin lokasi.';
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            errorMessage += 'Informasi lokasi tidak tersedia.';
-                            break;
-                        case error.TIMEOUT:
-                            errorMessage += 'Timeout. Coba lagi.';
-                            break;
-                        default:
-                            errorMessage += 'Error tidak dikenal.';
-                            break;
-                    }
-                    alert(errorMessage);
-                    
-                    locationBtn.disabled = false;
-                    locationBtn.innerHTML = originalText;
-                },
-                options
-            );
-        }
-
-        // Simple reverse geocoding using a free service
-        async function reverseGeocode(lat, lng) {
-            try {
-                // Using OpenStreetMap Nominatim (free service)
-                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
-                const data = await response.json();
-                
-                if (data && data.display_name) {
-                    return data.display_name;
-                } else {
-                    return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-                }
-            } catch (error) {
-                console.warn('Reverse geocoding failed:', error);
-                return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-            }
-        }
-
-        // Open location map modal
-        function openLocationMap() {
-            document.getElementById('locationModal').classList.remove('hidden');
-            updateLocationMap();
-            updateLocationStats();
-        }
-
-        // Close location map modal
-        function closeLocationModal() {
-            document.getElementById('locationModal').classList.add('hidden');
-        }
-
-        // Update location map with markers
-        function updateLocationMap() {
-            const markersContainer = document.getElementById('locationMarkers');
-            markersContainer.innerHTML = '';
-
-            // Get today's reports with location data
-            const today = new Date().toDateString();
-            const todayReportsWithLocation = reports.filter(r => 
-                new Date(r.timestamp).toDateString() === today && r.coordinates
-            );
-
-            // Create markers for each location
-            todayReportsWithLocation.forEach((report, index) => {
-                const marker = document.createElement('div');
-                marker.className = 'absolute w-6 h-6 bg-red-500 rounded-full border-2 border-white shadow-lg cursor-pointer transform -translate-x-1/2 -translate-y-1/2 hover:scale-110 transition-transform';
-                marker.style.left = `${20 + (index % 10) * 8}%`;
-                marker.style.top = `${20 + Math.floor(index / 10) * 15}%`;
-                marker.title = `${report.petugasAktif} - ${report.lokasi}`;
-                
-                // Add click handler to show report details
-                marker.onclick = () => {
-                    alert(`Petugas: ${report.petugasAktif}\nLokasi: ${report.lokasi}\nWaktu: ${new Date(report.timestamp).toLocaleString('id-ID')}\nKoordinat: ${report.coordinates.latitude.toFixed(6)}, ${report.coordinates.longitude.toFixed(6)}`);
-                };
-
-                markersContainer.appendChild(marker);
-            });
-
-            // Add current location marker if available
-            if (currentLocation) {
-                const currentMarker = document.createElement('div');
-                currentMarker.className = 'absolute w-8 h-8 bg-blue-500 rounded-full border-3 border-white shadow-lg animate-pulse';
-                currentMarker.style.left = '50%';
-                currentMarker.style.top = '50%';
-                currentMarker.style.transform = 'translate(-50%, -50%)';
-                currentMarker.title = 'Lokasi Anda Saat Ini';
-                
-                markersContainer.appendChild(currentMarker);
-
-                // Update current location display
-                document.getElementById('currentCoords').textContent = 
-                    `${currentLocation.latitude.toFixed(6)}, ${currentLocation.longitude.toFixed(6)}`;
-                document.getElementById('currentAccuracy').textContent = 
-                    `±${Math.round(currentLocation.accuracy)}m`;
-                document.getElementById('currentTime').textContent = 
-                    new Date(currentLocation.timestamp).toLocaleString('id-ID');
-            }
-        }
-
-        // Update location statistics
-        function updateLocationStats() {
-            const today = new Date().toDateString();
-            const todayReportsWithLocation = reports.filter(r => 
-                new Date(r.timestamp).toDateString() === today && r.coordinates
-            );
-            
-            const activeOfficers = new Set(todayReportsWithLocation.map(r => r.petugasAktif));
-            const coveredAreas = new Set(todayReportsWithLocation.map(r => r.lokasi));
-
-            document.getElementById('todayLocationCount').textContent = todayReportsWithLocation.length;
-            document.getElementById('activeOfficersCount').textContent = activeOfficers.size;
-            document.getElementById('coveredAreas').textContent = coveredAreas.size;
-        }
-
-        // Refresh location data
-        function refreshLocationData() {
-            updateLocationMap();
-            updateLocationStats();
-            alert('Data lokasi telah diperbarui!');
-        }
-
-        // Export location data
-        function exportLocationData() {
-            const today = new Date().toDateString();
-            const locationData = reports.filter(r => 
-                new Date(r.timestamp).toDateString() === today && r.coordinates
-            ).map(report => ({
-                'Waktu': new Date(report.timestamp).toLocaleString('id-ID'),
-                'Petugas': report.petugasAktif,
-                'Tim': report.tim,
-                'Lokasi': report.lokasi,
-                'Latitude': report.coordinates.latitude,
-                'Longitude': report.coordinates.longitude,
-                'Akurasi (m)': Math.round(report.coordinates.accuracy),
-                'Alamat': report.locationAddress || '-'
-            }));
-
-            if (locationData.length === 0) {
-                alert('Tidak ada data lokasi untuk diekspor hari ini');
-                return;
-            }
-
-            const ws = XLSX.utils.json_to_sheet(locationData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Lokasi Petugas');
-            
-            const fileName = `Lokasi_Petugas_${new Date().toISOString().split('T')[0]}.xlsx`;
-            XLSX.writeFile(wb, fileName);
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9737b3517769ef6a',t:'MTc1NTkyMTYwMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'974d2e6ad383ce51',t:'MTc1NjE0Njg0NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
