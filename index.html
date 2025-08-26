@@ -7,6 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Google Maps API -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&libraries=places&callback=initGoogleMaps"></script>
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
@@ -24,12 +26,6 @@
             appId: "1:990462370722:web:4ab77301f1decdfc1c88fb",
             measurementId: "G-7T6X3MMYEH"
         };
-        
-        // CATATAN: Konfigurasi di atas adalah contoh. Untuk data tersimpan permanen:
-        // 1. Buat proyek Firebase di https://console.firebase.google.com
-        // 2. Aktifkan Firestore Database
-        // 3. Ganti konfigurasi di atas dengan data proyek Anda
-        // 4. Atur aturan keamanan Firestore untuk akses publik (development) atau sesuai kebutuhan
         
         window.firebaseApp = initializeApp(firebaseConfig);
         window.db = getFirestore(window.firebaseApp);
@@ -182,11 +178,15 @@
             width: 100%;
             max-width: 400px;
             margin: 0 auto;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
         }
         
         .camera-preview {
             width: 100%;
-            border-radius: 12px;
+            height: 300px;
+            object-fit: cover;
             background: #000;
         }
         
@@ -207,6 +207,10 @@
             border: 4px solid #ccc;
             cursor: pointer;
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
         }
         
         .capture-btn:hover {
@@ -226,6 +230,95 @@
                 opacity: 1; 
                 transform: translateY(0) scale(1); 
             }
+        }
+        
+        .location-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            margin-top: 4px;
+        }
+        
+        .location-status.loading {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+        
+        .location-status.success {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+        }
+        
+        .location-status.error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+        }
+        
+        .camera-status {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .photo-preview-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .photo-preview-image {
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .google-map {
+            width: 100%;
+            height: 300px;
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+        }
+        
+        .map-container {
+            position: relative;
+            margin: 10px 0;
+        }
+        
+        .map-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .location-accuracy {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            margin-left: 5px;
         }
     </style>
 </head>
@@ -375,31 +468,115 @@
                         <div>
                             <label class="block text-white font-medium mb-1 text-sm">Lokasi Kerja</label>
                             <div class="flex flex-col sm:flex-row gap-2">
-                                <input type="text" id="location" placeholder="Lokasi akan terdeteksi otomatis" class="flex-1 px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm" readonly>
-                                <button type="button" onclick="getLocation()" class="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm whitespace-nowrap">
-                                    📍 Ambil Lokasi
+                                <input type="text" id="location" placeholder="Klik 'Ambil Lokasi' atau ketik manual" class="flex-1 px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                                <button type="button" id="locationBtn" onclick="getLocationWithGoogleMaps()" class="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm whitespace-nowrap">
+                                    🗺️ Ambil Lokasi
+                                </button>
+                                <button type="button" id="showMapBtn" onclick="toggleLocationMap()" class="bg-gradient-to-r from-green-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm whitespace-nowrap">
+                                    📍 Lihat Peta
                                 </button>
                             </div>
+                            <div id="locationStatus" class="location-status hidden">
+                                <span id="locationStatusText">Mengambil lokasi...</span>
+                            </div>
+                            
+                            <!-- Google Maps Container -->
+                            <div id="locationMapContainer" class="map-container hidden">
+                                <div class="map-overlay">
+                                    <span>🗺️ Google Maps</span>
+                                    <span id="mapAccuracy" class="location-accuracy">GPS Aktif</span>
+                                </div>
+                                <div id="locationMap" class="google-map"></div>
+                                <div class="flex gap-2 mt-2">
+                                    <button type="button" onclick="confirmMapLocation()" class="bg-green-500 text-white px-3 py-2 rounded-lg text-sm hover:bg-green-600 transition-colors">
+                                        ✅ Gunakan Lokasi Ini
+                                    </button>
+                                    <button type="button" onclick="toggleLocationMap()" class="bg-gray-500 text-white px-3 py-2 rounded-lg text-sm hover:bg-gray-600 transition-colors">
+                                        ❌ Tutup Peta
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <p class="text-white/50 text-xs mt-1">🗺️ <strong>Google Maps Terintegrasi:</strong> Lokasi akurat dengan peta visual dan Places API</p>
                         </div>
                         
                         <div>
                             <label class="block text-white font-medium mb-1 text-sm">Foto Dokumentasi</label>
                             <div class="camera-container">
-                                <video id="cameraPreview" class="camera-preview hidden" autoplay playsinline></video>
-                                <canvas id="photoCanvas" class="hidden"></canvas>
-                                <div id="photoPreview" class="hidden">
-                                    <img id="previewImage" class="w-full rounded-lg shadow-lg">
+                                <!-- Live Camera Preview -->
+                                <video id="cameraPreview" class="camera-preview hidden" autoplay playsinline muted></video>
+                                
+                                <!-- Camera Status Overlay -->
+                                <div id="cameraStatus" class="camera-status hidden">
+                                    <span id="cameraStatusText">🔴 Kamera Live</span>
                                 </div>
-                                <div class="flex flex-col sm:flex-row gap-2 mt-2">
-                                    <button type="button" id="startCameraBtn" onclick="startCamera()" class="bg-gradient-to-r from-green-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm">
-                                        📷 Buka Kamera
+                                
+                                <!-- Camera Controls Overlay -->
+                                <div id="cameraControls" class="camera-controls hidden">
+                                    <button type="button" id="captureBtn" onclick="capturePhotoAdvanced()" class="capture-btn bg-white hover:bg-gray-100 transition-all">
+                                        📸
                                     </button>
-                                    <button type="button" id="captureBtn" onclick="capturePhoto()" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm hidden">
-                                        📸 Ambil Foto
+                                    <button type="button" id="switchCameraBtn" onclick="switchCamera()" class="capture-btn bg-blue-500 hover:bg-blue-600 text-white transition-all">
+                                        🔄
                                     </button>
-                                    <button type="button" id="retakeBtn" onclick="retakePhoto()" class="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm hidden">
-                                        🔄 Foto Ulang
+                                </div>
+                                
+                                <!-- Hidden Canvas for Processing -->
+                                <canvas id="photoCanvas" class="hidden"></canvas>
+                                
+                                <!-- Photo Preview with Professional Layout -->
+                                <div id="photoPreview" class="photo-preview-container hidden">
+                                    <img id="previewImage" class="photo-preview-image">
+                                    <div class="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded-lg text-xs font-medium shadow-lg">
+                                        ✅ Foto Siap
+                                    </div>
+                                    <div class="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs" id="photoInfo">
+                                        📷 Resolusi: Loading...
+                                    </div>
+                                </div>
+                                
+                                <!-- Professional Camera Controls -->
+                                <div class="flex flex-col gap-3 mt-3">
+                                    <div class="flex flex-col sm:flex-row gap-2">
+                                        <button type="button" id="startCameraBtn" onclick="startCameraAdvanced()" class="bg-gradient-to-r from-green-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm font-medium">
+                                            📷 Buka Kamera Live
+                                        </button>
+                                        <button type="button" id="retakeBtn" onclick="retakePhotoAdvanced()" class="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm font-medium hidden">
+                                            🔄 Foto Ulang
+                                        </button>
+                                        <button type="button" id="stopCameraBtn" onclick="stopCameraAdvanced()" class="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm font-medium hidden">
+                                            ⏹️ Tutup Kamera
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Camera Settings -->
+                                    <div id="cameraSettings" class="hidden bg-white/5 rounded-lg p-3 space-y-2">
+                                        <div class="flex items-center justify-between text-white text-xs">
+                                            <span>Kualitas:</span>
+                                            <select id="qualitySelect" onchange="changeQuality()" class="bg-white/20 text-white rounded px-2 py-1 text-xs">
+                                                <option value="high">Tinggi (1920x1080)</option>
+                                                <option value="medium" selected>Sedang (1280x720)</option>
+                                                <option value="low">Rendah (640x480)</option>
+                                            </select>
+                                        </div>
+                                        <div class="flex items-center justify-between text-white text-xs">
+                                            <span>Kamera:</span>
+                                            <select id="cameraSelect" onchange="switchToSelectedCamera()" class="bg-white/20 text-white rounded px-2 py-1 text-xs">
+                                                <!-- Options will be populated dynamically -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <button type="button" id="toggleSettingsBtn" onclick="toggleCameraSettings()" class="text-white/70 hover:text-white text-xs transition-colors">
+                                        ⚙️ Pengaturan Kamera
                                     </button>
+                                </div>
+                                
+                                <!-- Camera Tips -->
+                                <div class="mt-2 text-white/60 text-xs space-y-1">
+                                    <p>💡 <strong>Tips:</strong> Pastikan pencahayaan cukup untuk hasil terbaik</p>
+                                    <p>📱 Gunakan kamera belakang untuk dokumentasi lapangan</p>
+                                    <p>🔄 Klik tombol biru di preview untuk ganti kamera</p>
                                 </div>
                             </div>
                         </div>
@@ -453,9 +630,29 @@
                             <label class="block text-white font-medium mb-1 text-sm">Lokasi (Opsional)</label>
                             <div class="flex flex-col sm:flex-row gap-2">
                                 <input type="text" id="postLocation" placeholder="Masukkan lokasi atau ambil otomatis" class="flex-1 px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
-                                <button type="button" onclick="getPostLocation()" class="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm whitespace-nowrap">
-                                    📍 Ambil Lokasi
+                                <button type="button" onclick="getPostLocationWithGoogleMaps()" class="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm whitespace-nowrap">
+                                    🗺️ Ambil Lokasi
                                 </button>
+                                <button type="button" onclick="togglePostLocationMap()" class="bg-gradient-to-r from-green-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm whitespace-nowrap">
+                                    📍 Lihat Peta
+                                </button>
+                            </div>
+                            
+                            <!-- Google Maps Container for Posts -->
+                            <div id="postLocationMapContainer" class="map-container hidden">
+                                <div class="map-overlay">
+                                    <span>🗺️ Google Maps</span>
+                                    <span id="postMapAccuracy" class="location-accuracy">GPS Aktif</span>
+                                </div>
+                                <div id="postLocationMap" class="google-map"></div>
+                                <div class="flex gap-2 mt-2">
+                                    <button type="button" onclick="confirmPostMapLocation()" class="bg-green-500 text-white px-3 py-2 rounded-lg text-sm hover:bg-green-600 transition-colors">
+                                        ✅ Gunakan Lokasi Ini
+                                    </button>
+                                    <button type="button" onclick="togglePostLocationMap()" class="bg-gray-500 text-white px-3 py-2 rounded-lg text-sm hover:bg-gray-600 transition-colors">
+                                        ❌ Tutup Peta
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         
@@ -707,52 +904,6 @@
     </div>
 
     <script>
-        /*
-        ========================================
-        PANDUAN SETUP FIREBASE UNTUK DATA PERMANEN
-        ========================================
-        
-        LANGKAH 1: BUAT PROYEK FIREBASE
-        - Kunjungi https://console.firebase.google.com
-        - Klik "Add project" atau "Tambah proyek"
-        - Beri nama proyek (contoh: ppsu-pisbar-app)
-        - Ikuti langkah-langkah setup
-        
-        LANGKAH 2: AKTIFKAN FIRESTORE DATABASE
-        - Di dashboard Firebase, pilih "Firestore Database"
-        - Klik "Create database"
-        - Pilih "Start in test mode" (untuk development)
-        - Pilih lokasi server (pilih yang terdekat dengan Indonesia)
-        
-        LANGKAH 3: DAPATKAN KONFIGURASI
-        - Pilih "Project settings" (ikon gear)
-        - Scroll ke bawah, pilih "Web app" (</>)
-        - Daftarkan app dengan nama (contoh: PPSU-Pisbar-Web)
-        - Copy konfigurasi yang diberikan
-        
-        LANGKAH 4: GANTI KONFIGURASI DI ATAS
-        - Ganti firebaseConfig di atas dengan data dari Firebase Console
-        - Pastikan semua field terisi dengan benar
-        
-        LANGKAH 5: ATUR ATURAN FIRESTORE (OPSIONAL)
-        - Di Firestore Database, pilih tab "Rules"
-        - Untuk development, gunakan:
-          rules_version = '2';
-          service cloud.firestore {
-            match /databases/{database}/documents {
-              match /{document=**} {
-                allow read, write: if true;
-              }
-            }
-          }
-        
-        SETELAH SETUP SELESAI:
-        ✅ Data akan tersimpan permanen di cloud
-        ✅ Dapat diakses dari semua device dan browser
-        ✅ Data real-time sync otomatis
-        ✅ Hanya admin yang bisa hapus data
-        */
-        
         // Global variables
         let currentUser = null;
         let reports = [];
@@ -761,6 +912,29 @@
         let capturedPhoto = null;
         let reportsListener = null;
         let feedListener = null;
+        let locationWatchId = null;
+        let availableCameras = [];
+        let currentCameraIndex = 0;
+        let currentQuality = 'medium';
+        
+        // Google Maps variables
+        let googleMapsLoaded = false;
+        let locationMap = null;
+        let postLocationMap = null;
+        let currentLocationMarker = null;
+        let postLocationMarker = null;
+        let currentMapPosition = null;
+        let postMapPosition = null;
+        let geocoder = null;
+        let placesService = null;
+        
+        // Initialize Google Maps
+        function initGoogleMaps() {
+            googleMapsLoaded = true;
+            geocoder = new google.maps.Geocoder();
+            console.log('🗺️ Google Maps API loaded successfully!');
+            showNotification('🗺️ Google Maps siap digunakan!', 'success');
+        }
         
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
@@ -773,18 +947,44 @@
             }, 1000);
             
             initializeFirebaseListeners();
+            
+            // Check camera and location permissions on load
+            checkDeviceCapabilities();
         });
+        
+        // Check device capabilities
+        async function checkDeviceCapabilities() {
+            // Check camera
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                try {
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                    console.log(`Found ${videoDevices.length} camera(s)`);
+                    
+                    if (videoDevices.length > 0) {
+                        showNotification(`📷 ${videoDevices.length} kamera tersedia`, 'success');
+                    }
+                } catch (error) {
+                    console.log('Camera check error:', error);
+                }
+            }
+            
+            // Check location
+            if (navigator.geolocation) {
+                console.log('Geolocation API tersedia');
+                showNotification('📍 GPS tersedia', 'success');
+            } else {
+                showNotification('⚠️ GPS tidak tersedia di browser ini', 'info');
+            }
+        }
         
         // Test Firebase connection
         async function testFirebaseConnection() {
             try {
-                // Test dengan membaca collection
                 const testQuery = query(collection(window.db, 'reports'));
                 await getDocs(testQuery);
                 
                 showNotification('🎉 Firebase terhubung! Proyek: aplikasi-laporan-ppsu', 'success');
-                
-                // Update status di halaman
                 updateConnectionStatus(true);
                 
             } catch (error) {
@@ -795,7 +995,6 @@
         }
         
         function updateConnectionStatus(connected) {
-            // Tambahkan indikator status di navigation
             const nav = document.querySelector('nav .container');
             let statusIndicator = document.getElementById('firebaseStatus');
             
@@ -818,7 +1017,6 @@
         // Initialize Firebase real-time listeners
         function initializeFirebaseListeners() {
             try {
-                // Cek koneksi Firebase terlebih dahulu
                 showNotification('🔄 Menghubungkan ke Firebase "aplikasi-laporan-ppsu"...', 'info');
                 
                 // Listen to reports collection
@@ -831,14 +1029,12 @@
                     updateAdminStats();
                     updateReportsTable();
                     
-                    // Tampilkan status koneksi berhasil
                     if (reports.length >= 0) {
                         showNotification('✅ Berhasil terhubung ke Firebase! Semua data tersimpan permanen di cloud.', 'success');
                     }
                 }, (error) => {
                     console.log('Error listening to reports:', error);
                     showNotification('❌ Gagal terhubung Firebase. Periksa konfigurasi atau koneksi internet.', 'error');
-                    showFirebaseSetupReminder();
                 });
                 
                 // Listen to feed collection
@@ -858,7 +1054,6 @@
             } catch (error) {
                 console.log('Firebase initialization error:', error);
                 showNotification('⚠️ Firebase belum dikonfigurasi. Data hanya tersimpan lokal.', 'info');
-                showFirebaseSetupReminder();
                 
                 // Fallback to localStorage
                 reports = JSON.parse(localStorage.getItem('ppsu_reports') || '[]');
@@ -866,22 +1061,6 @@
                 loadFeedPosts();
                 updateFeedTable();
             }
-        }
-        
-        function showFirebaseSetupReminder() {
-            setTimeout(() => {
-                alert(`🔧 SETUP FIREBASE DIPERLUKAN
-
-Untuk memastikan data tersimpan permanen di semua device:
-
-1. Buka https://console.firebase.google.com
-2. Buat proyek baru atau pilih proyek existing
-3. Aktifkan Firestore Database
-4. Ganti konfigurasi Firebase di kode dengan data proyek Anda
-5. Refresh halaman setelah konfigurasi selesai
-
-Saat ini data hanya tersimpan lokal di browser ini.`);
-            }, 3000);
         }
         
         function setupEventListeners() {
@@ -944,76 +1123,1032 @@ Saat ini data hanya tersimpan lokal di browser ini.`);
             }, 50);
         }
         
-        function getLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    function(position) {
-                        const lat = position.coords.latitude;
-                        const lon = position.coords.longitude;
-                        
-                        // Simulate reverse geocoding (in real app, use Google Maps API)
-                        const locations = [
-                            'Jl. Sudirman No. 123, Jakarta Pusat',
-                            'Jl. Thamrin No. 456, Jakarta Pusat',
-                            'Jl. Gatot Subroto No. 789, Jakarta Selatan',
-                            'Jl. Kuningan No. 321, Jakarta Selatan'
-                        ];
-                        
-                        const randomLocation = locations[Math.floor(Math.random() * locations.length)];
-                        document.getElementById('location').value = `${randomLocation} (${lat.toFixed(6)}, ${lon.toFixed(6)})`;
-                        
-                        showNotification('Lokasi berhasil diambil!', 'success');
-                    },
-                    function(error) {
-                        showNotification('Gagal mengambil lokasi. Pastikan GPS aktif.', 'error');
-                    }
-                );
-            } else {
-                showNotification('Geolocation tidak didukung browser ini.', 'error');
+        // GOOGLE MAPS INTEGRATED LOCATION FUNCTIONS
+        async function getLocationWithGoogleMaps() {
+            if (!googleMapsLoaded) {
+                showNotification('⏳ Google Maps sedang dimuat...', 'info');
+                setTimeout(() => getLocationWithGoogleMaps(), 2000);
+                return;
+            }
+            
+            const locationInput = document.getElementById('location');
+            const button = document.getElementById('locationBtn');
+            const statusDiv = document.getElementById('locationStatus');
+            const statusText = document.getElementById('locationStatusText');
+            
+            // Show loading state
+            button.innerHTML = '⏳ Mengambil...';
+            button.disabled = true;
+            statusDiv.className = 'location-status loading';
+            statusDiv.classList.remove('hidden');
+            statusText.textContent = '🗺️ Mengambil lokasi dengan Google Maps...';
+            
+            if (!navigator.geolocation) {
+                locationInput.readOnly = false;
+                locationInput.placeholder = 'GPS tidak tersedia - Masukkan lokasi manual';
+                locationInput.focus();
+                
+                statusDiv.className = 'location-status error';
+                statusText.textContent = '❌ GPS tidak tersedia - Input manual aktif';
+                
+                button.innerHTML = '🗺️ Ambil Lokasi';
+                button.disabled = false;
+                
+                showNotification('GPS tidak tersedia. Silakan input lokasi manual.', 'info');
+                return;
+            }
+            
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 30000
+            };
+            
+            try {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, options);
+                });
+                
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                const accuracy = position.coords.accuracy;
+                
+                statusText.textContent = `🗺️ GPS ditemukan (akurasi: ${Math.round(accuracy)}m) - Mengambil alamat Google...`;
+                
+                // Use Google Maps Geocoding API for better accuracy
+                const address = await getAddressFromGoogleMaps(lat, lon);
+                
+                if (address) {
+                    locationInput.value = address;
+                    statusDiv.className = 'location-status success';
+                    statusText.textContent = `✅ Lokasi Google Maps (akurasi: ${Math.round(accuracy)}m)`;
+                    showNotification(`🗺️ Lokasi berhasil diambil dengan Google Maps! Akurasi ${Math.round(accuracy)}m`, 'success');
+                    
+                    // Store position for map display
+                    currentMapPosition = { lat, lng: lon, accuracy };
+                } else {
+                    // Fallback to coordinates
+                    locationInput.value = `Koordinat: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+                    statusDiv.className = 'location-status success';
+                    statusText.textContent = `✅ Koordinat GPS (akurasi: ${Math.round(accuracy)}m)`;
+                    showNotification('Lokasi diambil dalam bentuk koordinat GPS', 'info');
+                    
+                    currentMapPosition = { lat, lng: lon, accuracy };
+                }
+                
+            } catch (error) {
+                console.error('Google Maps location error:', error);
+                
+                let errorMessage = 'GPS tidak dapat diakses';
+                if (error.code === 1) {
+                    errorMessage = 'Izin GPS ditolak - Aktifkan di pengaturan browser';
+                } else if (error.code === 2) {
+                    errorMessage = 'Posisi tidak tersedia - Coba di area terbuka';
+                } else if (error.code === 3) {
+                    errorMessage = 'Timeout GPS - Sinyal lemah';
+                }
+                
+                locationInput.readOnly = false;
+                locationInput.placeholder = 'GPS gagal - Masukkan lokasi manual';
+                locationInput.focus();
+                
+                statusDiv.className = 'location-status error';
+                statusText.textContent = `❌ ${errorMessage}`;
+                
+                showNotification(`${errorMessage}. Input manual diaktifkan.`, 'info');
+            }
+            
+            button.innerHTML = '🗺️ Ambil Lokasi';
+            button.disabled = false;
+            
+            setTimeout(() => {
+                statusDiv.classList.add('hidden');
+            }, 5000);
+        }
+        
+        // Get address using Google Maps Geocoding API
+        async function getAddressFromGoogleMaps(lat, lng) {
+            if (!geocoder) return null;
+            
+            try {
+                const result = await new Promise((resolve, reject) => {
+                    geocoder.geocode(
+                        { location: { lat, lng } },
+                        (results, status) => {
+                            if (status === 'OK' && results[0]) {
+                                resolve(results[0]);
+                            } else {
+                                reject(new Error('Geocoding failed'));
+                            }
+                        }
+                    );
+                });
+                
+                // Parse the formatted address for better readability
+                const address = result.formatted_address;
+                
+                // Try to get a cleaner address
+                const addressComponents = result.address_components;
+                let cleanAddress = '';
+                
+                // Build a clean address from components
+                const streetNumber = addressComponents.find(c => c.types.includes('street_number'))?.long_name || '';
+                const route = addressComponents.find(c => c.types.includes('route'))?.long_name || '';
+                const locality = addressComponents.find(c => c.types.includes('administrative_area_level_4'))?.long_name || 
+                                addressComponents.find(c => c.types.includes('locality'))?.long_name || '';
+                const city = addressComponents.find(c => c.types.includes('administrative_area_level_2'))?.long_name || '';
+                const province = addressComponents.find(c => c.types.includes('administrative_area_level_1'))?.long_name || '';
+                
+                if (streetNumber && route) {
+                    cleanAddress = `${route} ${streetNumber}`;
+                } else if (route) {
+                    cleanAddress = route;
+                } else if (locality) {
+                    cleanAddress = locality;
+                }
+                
+                if (locality && cleanAddress !== locality) {
+                    cleanAddress += `, ${locality}`;
+                }
+                
+                if (city && !cleanAddress.includes(city)) {
+                    cleanAddress += `, ${city}`;
+                }
+                
+                return cleanAddress || address;
+                
+            } catch (error) {
+                console.log('Google Geocoding error:', error);
+                return null;
             }
         }
         
-        function getPostLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    function(position) {
-                        const lat = position.coords.latitude;
-                        const lon = position.coords.longitude;
-                        
-                        const locations = [
-                            'Jl. Sudirman No. 123, Jakarta Pusat',
-                            'Jl. Thamrin No. 456, Jakarta Pusat',
-                            'Jl. Gatot Subroto No. 789, Jakarta Selatan',
-                            'Jl. Kuningan No. 321, Jakarta Selatan'
-                        ];
-                        
-                        const randomLocation = locations[Math.floor(Math.random() * locations.length)];
-                        document.getElementById('postLocation').value = `${randomLocation} (${lat.toFixed(6)}, ${lon.toFixed(6)})`;
-                        
-                        showNotification('Lokasi berhasil diambil!', 'success');
-                    },
-                    function(error) {
-                        showNotification('Gagal mengambil lokasi. Pastikan GPS aktif.', 'error');
-                    }
-                );
+        // Toggle location map display
+        function toggleLocationMap() {
+            const mapContainer = document.getElementById('locationMapContainer');
+            const showMapBtn = document.getElementById('showMapBtn');
+            
+            if (mapContainer.classList.contains('hidden')) {
+                // Show map
+                mapContainer.classList.remove('hidden');
+                showMapBtn.textContent = '🔼 Sembunyikan Peta';
+                
+                // Initialize map if not already done
+                if (!locationMap) {
+                    initializeLocationMap();
+                }
             } else {
-                showNotification('Geolocation tidak didukung browser ini.', 'error');
+                // Hide map
+                mapContainer.classList.add('hidden');
+                showMapBtn.textContent = '📍 Lihat Peta';
             }
         }
         
-        function startCamera() {
-            // Camera functionality placeholder
-            showNotification('Fitur kamera akan segera tersedia!', 'info');
+        // Initialize location map
+        function initializeLocationMap() {
+            if (!googleMapsLoaded) {
+                showNotification('Google Maps belum dimuat', 'error');
+                return;
+            }
+            
+            const mapElement = document.getElementById('locationMap');
+            const accuracyElement = document.getElementById('mapAccuracy');
+            
+            // Default to Jakarta if no position available
+            const defaultPosition = { lat: -6.2088, lng: 106.8456 };
+            const initialPosition = currentMapPosition || defaultPosition;
+            
+            // Create map
+            locationMap = new google.maps.Map(mapElement, {
+                zoom: currentMapPosition ? 16 : 11,
+                center: initialPosition,
+                mapTypeId: google.maps.MapTypeId.ROADMAP,
+                streetViewControl: false,
+                mapTypeControl: true,
+                fullscreenControl: true,
+                zoomControl: true
+            });
+            
+            // Add marker
+            currentLocationMarker = new google.maps.Marker({
+                position: initialPosition,
+                map: locationMap,
+                draggable: true,
+                title: 'Lokasi Kerja',
+                icon: {
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                        <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="16" cy="16" r="8" fill="#3B82F6" stroke="white" stroke-width="2"/>
+                            <circle cx="16" cy="16" r="3" fill="white"/>
+                        </svg>
+                    `),
+                    scaledSize: new google.maps.Size(32, 32),
+                    anchor: new google.maps.Point(16, 16)
+                }
+            });
+            
+            // Update accuracy display
+            if (currentMapPosition && currentMapPosition.accuracy) {
+                accuracyElement.textContent = `Akurasi: ${Math.round(currentMapPosition.accuracy)}m`;
+            }
+            
+            // Add click listener to map
+            locationMap.addListener('click', (event) => {
+                const position = event.latLng;
+                currentLocationMarker.setPosition(position);
+                currentMapPosition = {
+                    lat: position.lat(),
+                    lng: position.lng()
+                };
+                
+                // Update address
+                updateAddressFromMapPosition(position.lat(), position.lng(), 'location');
+            });
+            
+            // Add drag listener to marker
+            currentLocationMarker.addListener('dragend', (event) => {
+                const position = event.latLng;
+                currentMapPosition = {
+                    lat: position.lat(),
+                    lng: position.lng()
+                };
+                
+                // Update address
+                updateAddressFromMapPosition(position.lat(), position.lng(), 'location');
+            });
+            
+            showNotification('🗺️ Peta Google Maps siap! Klik atau drag marker untuk memilih lokasi', 'success');
         }
         
-        function capturePhoto() {
-            // Capture functionality placeholder
-            showNotification('Foto berhasil diambil!', 'success');
+        // Update address from map position
+        async function updateAddressFromMapPosition(lat, lng, inputType) {
+            const address = await getAddressFromGoogleMaps(lat, lng);
+            if (address) {
+                const inputElement = document.getElementById(inputType);
+                inputElement.value = address;
+                showNotification('📍 Alamat diperbarui dari peta', 'success');
+            }
         }
         
-        function retakePhoto() {
-            // Retake functionality placeholder
-            showNotification('Siap untuk foto ulang!', 'info');
+        // Confirm map location
+        function confirmMapLocation() {
+            if (currentMapPosition) {
+                const locationInput = document.getElementById('location');
+                if (!locationInput.value.trim()) {
+                    updateAddressFromMapPosition(currentMapPosition.lat, currentMapPosition.lng, 'location');
+                }
+                toggleLocationMap();
+                showNotification('✅ Lokasi dari peta dikonfirmasi!', 'success');
+            } else {
+                showNotification('Pilih lokasi di peta terlebih dahulu', 'error');
+            }
+        }
+        
+        // Post location functions
+        async function getPostLocationWithGoogleMaps() {
+            if (!googleMapsLoaded) {
+                showNotification('⏳ Google Maps sedang dimuat...', 'info');
+                setTimeout(() => getPostLocationWithGoogleMaps(), 2000);
+                return;
+            }
+            
+            const locationInput = document.getElementById('postLocation');
+            const button = event.target;
+            
+            button.innerHTML = '⏳ Mengambil...';
+            button.disabled = true;
+            
+            if (!navigator.geolocation) {
+                showNotification('GPS tidak tersedia. Input manual tersedia.', 'info');
+                button.innerHTML = '🗺️ Ambil Lokasi';
+                button.disabled = false;
+                return;
+            }
+            
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 30000
+            };
+            
+            try {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, options);
+                });
+                
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                const accuracy = position.coords.accuracy;
+                
+                const address = await getAddressFromGoogleMaps(lat, lon);
+                
+                if (address) {
+                    locationInput.value = address;
+                    showNotification(`🗺️ Lokasi Google Maps berhasil! Akurasi ${Math.round(accuracy)}m`, 'success');
+                    postMapPosition = { lat, lng: lon, accuracy };
+                } else {
+                    locationInput.value = `Koordinat: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+                    showNotification('Lokasi diambil dalam bentuk koordinat GPS', 'info');
+                    postMapPosition = { lat, lng: lon, accuracy };
+                }
+                
+            } catch (error) {
+                console.error('Post location error:', error);
+                showNotification('GPS gagal. Silakan input lokasi manual.', 'info');
+            }
+            
+            button.innerHTML = '🗺️ Ambil Lokasi';
+            button.disabled = false;
+        }
+        
+        function togglePostLocationMap() {
+            const mapContainer = document.getElementById('postLocationMapContainer');
+            const button = event.target;
+            
+            if (mapContainer.classList.contains('hidden')) {
+                mapContainer.classList.remove('hidden');
+                button.textContent = '🔼 Sembunyikan Peta';
+                
+                if (!postLocationMap) {
+                    initializePostLocationMap();
+                }
+            } else {
+                mapContainer.classList.add('hidden');
+                button.textContent = '📍 Lihat Peta';
+            }
+        }
+        
+        function initializePostLocationMap() {
+            if (!googleMapsLoaded) {
+                showNotification('Google Maps belum dimuat', 'error');
+                return;
+            }
+            
+            const mapElement = document.getElementById('postLocationMap');
+            const accuracyElement = document.getElementById('postMapAccuracy');
+            
+            const defaultPosition = { lat: -6.2088, lng: 106.8456 };
+            const initialPosition = postMapPosition || defaultPosition;
+            
+            postLocationMap = new google.maps.Map(mapElement, {
+                zoom: postMapPosition ? 16 : 11,
+                center: initialPosition,
+                mapTypeId: google.maps.MapTypeId.ROADMAP,
+                streetViewControl: false,
+                mapTypeControl: true,
+                fullscreenControl: true,
+                zoomControl: true
+            });
+            
+            postLocationMarker = new google.maps.Marker({
+                position: initialPosition,
+                map: postLocationMap,
+                draggable: true,
+                title: 'Lokasi Postingan',
+                icon: {
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                        <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="16" cy="16" r="8" fill="#10B981" stroke="white" stroke-width="2"/>
+                            <circle cx="16" cy="16" r="3" fill="white"/>
+                        </svg>
+                    `),
+                    scaledSize: new google.maps.Size(32, 32),
+                    anchor: new google.maps.Point(16, 16)
+                }
+            });
+            
+            if (postMapPosition && postMapPosition.accuracy) {
+                accuracyElement.textContent = `Akurasi: ${Math.round(postMapPosition.accuracy)}m`;
+            }
+            
+            postLocationMap.addListener('click', (event) => {
+                const position = event.latLng;
+                postLocationMarker.setPosition(position);
+                postMapPosition = {
+                    lat: position.lat(),
+                    lng: position.lng()
+                };
+                updateAddressFromMapPosition(position.lat(), position.lng(), 'postLocation');
+            });
+            
+            postLocationMarker.addListener('dragend', (event) => {
+                const position = event.latLng;
+                postMapPosition = {
+                    lat: position.lat(),
+                    lng: position.lng()
+                };
+                updateAddressFromMapPosition(position.lat(), position.lng(), 'postLocation');
+            });
+            
+            showNotification('🗺️ Peta postingan siap! Klik atau drag marker untuk memilih lokasi', 'success');
+        }
+        
+        function confirmPostMapLocation() {
+            if (postMapPosition) {
+                const locationInput = document.getElementById('postLocation');
+                if (!locationInput.value.trim()) {
+                    updateAddressFromMapPosition(postMapPosition.lat, postMapPosition.lng, 'postLocation');
+                }
+                togglePostLocationMap();
+                showNotification('✅ Lokasi postingan dari peta dikonfirmasi!', 'success');
+            } else {
+                showNotification('Pilih lokasi di peta terlebih dahulu', 'error');
+            }
+        }
+        
+        // LEGACY LOCATION FUNCTIONS (FALLBACK)
+        async function getLocationAccurate() {
+            const locationInput = document.getElementById('location');
+            const button = document.getElementById('locationBtn');
+            const statusDiv = document.getElementById('locationStatus');
+            const statusText = document.getElementById('locationStatusText');
+            
+            // Show loading state
+            button.innerHTML = '⏳ Mengambil...';
+            button.disabled = true;
+            statusDiv.className = 'location-status loading';
+            statusDiv.classList.remove('hidden');
+            statusText.textContent = 'Mengambil lokasi dengan GPS akurat...';
+            
+            if (!navigator.geolocation) {
+                // Fallback to manual input
+                locationInput.readOnly = false;
+                locationInput.placeholder = 'GPS tidak tersedia - Masukkan lokasi manual';
+                locationInput.focus();
+                
+                statusDiv.className = 'location-status error';
+                statusText.textContent = '❌ GPS tidak tersedia - Input manual aktif';
+                
+                button.innerHTML = '📍 Ambil Lokasi';
+                button.disabled = false;
+                
+                showNotification('GPS tidak tersedia. Silakan input lokasi manual.', 'info');
+                return;
+            }
+            
+            // High accuracy GPS options
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 15000, // 15 seconds timeout
+                maximumAge: 30000 // 30 seconds cache
+            };
+            
+            try {
+                // Get current position with high accuracy
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, options);
+                });
+                
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                const accuracy = position.coords.accuracy;
+                
+                statusText.textContent = `📡 GPS ditemukan (akurasi: ${Math.round(accuracy)}m) - Mengambil alamat...`;
+                
+                // Try multiple geocoding services for better accuracy
+                let address = await getAddressFromMultipleSources(lat, lon);
+                
+                if (address) {
+                    locationInput.value = address;
+                    statusDiv.className = 'location-status success';
+                    statusText.textContent = `✅ Lokasi berhasil diambil (akurasi: ${Math.round(accuracy)}m)`;
+                    showNotification(`Lokasi berhasil diambil dengan akurasi ${Math.round(accuracy)} meter!`, 'success');
+                } else {
+                    // Fallback to coordinates
+                    locationInput.value = `Koordinat: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+                    statusDiv.className = 'location-status success';
+                    statusText.textContent = `✅ Koordinat GPS (akurasi: ${Math.round(accuracy)}m)`;
+                    showNotification('Lokasi diambil dalam bentuk koordinat GPS', 'info');
+                }
+                
+            } catch (error) {
+                console.error('Geolocation error:', error);
+                
+                // Handle different error types
+                let errorMessage = 'GPS tidak dapat diakses';
+                if (error.code === 1) {
+                    errorMessage = 'Izin GPS ditolak - Aktifkan di pengaturan browser';
+                } else if (error.code === 2) {
+                    errorMessage = 'Posisi tidak tersedia - Coba di area terbuka';
+                } else if (error.code === 3) {
+                    errorMessage = 'Timeout GPS - Sinyal lemah';
+                }
+                
+                // Enable manual input
+                locationInput.readOnly = false;
+                locationInput.placeholder = 'GPS gagal - Masukkan lokasi manual';
+                locationInput.focus();
+                
+                statusDiv.className = 'location-status error';
+                statusText.textContent = `❌ ${errorMessage}`;
+                
+                showNotification(`${errorMessage}. Input manual diaktifkan.`, 'info');
+            }
+            
+            // Reset button
+            button.innerHTML = '📍 Ambil Lokasi';
+            button.disabled = false;
+            
+            // Hide status after 5 seconds
+            setTimeout(() => {
+                statusDiv.classList.add('hidden');
+            }, 5000);
+        }
+        
+        // Get address from multiple geocoding sources
+        async function getAddressFromMultipleSources(lat, lon) {
+            const sources = [
+                // Primary: BigDataCloud (free, no API key needed)
+                {
+                    url: `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=id`,
+                    parser: (data) => {
+                        if (data.locality && data.city) {
+                            return `${data.locality}, ${data.city}, ${data.countryName}`;
+                        } else if (data.city) {
+                            return `${data.city}, ${data.countryName}`;
+                        } else if (data.principalSubdivision) {
+                            return `${data.principalSubdivision}, ${data.countryName}`;
+                        }
+                        return null;
+                    }
+                },
+                // Secondary: OpenStreetMap Nominatim
+                {
+                    url: `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=id`,
+                    parser: (data) => {
+                        if (data.display_name) {
+                            // Parse and clean the address
+                            const parts = data.display_name.split(',');
+                            if (parts.length >= 3) {
+                                return parts.slice(0, 3).join(', ').trim();
+                            }
+                            return data.display_name;
+                        }
+                        return null;
+                    }
+                }
+            ];
+            
+            // Try each source
+            for (const source of sources) {
+                try {
+                    const response = await fetch(source.url);
+                    if (response.ok) {
+                        const data = await response.json();
+                        const address = source.parser(data);
+                        if (address) {
+                            return address;
+                        }
+                    }
+                } catch (error) {
+                    console.log(`Geocoding source failed:`, error);
+                    continue;
+                }
+            }
+            
+            return null; // All sources failed
+        }
+        
+        // Post location with same accuracy
+        async function getPostLocationAccurate() {
+            const locationInput = document.getElementById('postLocation');
+            const button = event.target;
+            
+            // Show loading state
+            button.innerHTML = '⏳ Mengambil...';
+            button.disabled = true;
+            
+            if (!navigator.geolocation) {
+                showNotification('GPS tidak tersedia. Input manual tersedia.', 'info');
+                button.innerHTML = '📍 Ambil Lokasi';
+                button.disabled = false;
+                return;
+            }
+            
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 30000
+            };
+            
+            try {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, options);
+                });
+                
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                const accuracy = position.coords.accuracy;
+                
+                let address = await getAddressFromMultipleSources(lat, lon);
+                
+                if (address) {
+                    locationInput.value = address;
+                    showNotification(`Lokasi berhasil diambil dengan akurasi ${Math.round(accuracy)} meter!`, 'success');
+                } else {
+                    locationInput.value = `Koordinat: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+                    showNotification('Lokasi diambil dalam bentuk koordinat GPS', 'info');
+                }
+                
+            } catch (error) {
+                console.error('Post location error:', error);
+                showNotification('GPS gagal. Silakan input lokasi manual.', 'info');
+            }
+            
+            // Reset button
+            button.innerHTML = '📍 Ambil Lokasi';
+            button.disabled = false;
+        }
+        
+        // PROFESSIONAL CAMERA FUNCTIONS WITH FULL FUNCTIONALITY
+        async function startCameraAdvanced() {
+            const video = document.getElementById('cameraPreview');
+            const startBtn = document.getElementById('startCameraBtn');
+            const stopBtn = document.getElementById('stopCameraBtn');
+            const cameraControls = document.getElementById('cameraControls');
+            const statusDiv = document.getElementById('cameraStatus');
+            const statusText = document.getElementById('cameraStatusText');
+            const settingsDiv = document.getElementById('cameraSettings');
+            
+            try {
+                // Stop existing stream if any
+                if (cameraStream) {
+                    cameraStream.getTracks().forEach(track => track.stop());
+                }
+                
+                // Enumerate available cameras
+                await enumerateCameras();
+                
+                if (availableCameras.length === 0) {
+                    throw new Error('Tidak ada kamera yang tersedia');
+                }
+                
+                // Get quality constraints
+                const qualityConstraints = getQualityConstraints();
+                
+                // Prefer back camera for field work
+                let constraints = {
+                    video: {
+                        ...qualityConstraints,
+                        facingMode: 'environment' // Back camera
+                    }
+                };
+                
+                // Try to get back camera first
+                try {
+                    cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                } catch (backCameraError) {
+                    console.log('Back camera not available, trying front camera:', backCameraError);
+                    constraints.video.facingMode = 'user'; // Front camera
+                    try {
+                        cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    } catch (frontCameraError) {
+                        // Try with specific device ID
+                        if (availableCameras.length > 0) {
+                            constraints.video = {
+                                ...qualityConstraints,
+                                deviceId: { exact: availableCameras[0].deviceId }
+                            };
+                            cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                        } else {
+                            throw frontCameraError;
+                        }
+                    }
+                }
+                
+                // Set video source
+                video.srcObject = cameraStream;
+                
+                // Wait for video to load
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = resolve;
+                });
+                
+                // Show camera preview and controls
+                video.classList.remove('hidden');
+                startBtn.classList.add('hidden');
+                stopBtn.classList.remove('hidden');
+                cameraControls.classList.remove('hidden');
+                statusDiv.classList.remove('hidden');
+                settingsDiv.classList.remove('hidden');
+                
+                // Update status
+                const track = cameraStream.getVideoTracks()[0];
+                const settings = track.getSettings();
+                const label = track.label || 'Kamera';
+                statusText.innerHTML = `🔴 ${label} - ${settings.width}x${settings.height}`;
+                
+                // Update camera selector
+                updateCameraSelector();
+                
+                showNotification(`📷 Kamera live aktif! ${label} (${settings.width}x${settings.height})`, 'success');
+                
+            } catch (error) {
+                console.error('Camera error:', error);
+                
+                let errorMessage = 'Gagal mengakses kamera';
+                if (error.name === 'NotAllowedError') {
+                    errorMessage = 'Izin kamera ditolak. Aktifkan di pengaturan browser.';
+                } else if (error.name === 'NotFoundError') {
+                    errorMessage = 'Kamera tidak ditemukan di perangkat ini.';
+                } else if (error.name === 'NotReadableError') {
+                    errorMessage = 'Kamera sedang digunakan aplikasi lain.';
+                } else if (error.name === 'OverconstrainedError') {
+                    errorMessage = 'Resolusi tidak didukung. Coba kualitas lebih rendah.';
+                }
+                
+                showNotification(errorMessage, 'error');
+                
+                // Show error status
+                statusDiv.classList.remove('hidden');
+                statusText.innerHTML = '❌ Kamera Error';
+            }
+        }
+        
+        async function enumerateCameras() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                availableCameras = devices.filter(device => device.kind === 'videoinput');
+                
+                console.log(`Found ${availableCameras.length} camera(s):`, availableCameras);
+                
+                // Populate camera selector
+                const cameraSelect = document.getElementById('cameraSelect');
+                cameraSelect.innerHTML = '';
+                
+                availableCameras.forEach((camera, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = camera.label || `Kamera ${index + 1}`;
+                    cameraSelect.appendChild(option);
+                });
+                
+            } catch (error) {
+                console.error('Error enumerating cameras:', error);
+                availableCameras = [];
+            }
+        }
+        
+        function getQualityConstraints() {
+            const qualitySettings = {
+                high: {
+                    width: { ideal: 1920, max: 1920 },
+                    height: { ideal: 1080, max: 1080 }
+                },
+                medium: {
+                    width: { ideal: 1280, max: 1280 },
+                    height: { ideal: 720, max: 720 }
+                },
+                low: {
+                    width: { ideal: 640, max: 640 },
+                    height: { ideal: 480, max: 480 }
+                }
+            };
+            
+            return qualitySettings[currentQuality] || qualitySettings.medium;
+        }
+        
+        function updateCameraSelector() {
+            if (!cameraStream) return;
+            
+            const track = cameraStream.getVideoTracks()[0];
+            const settings = track.getSettings();
+            const cameraSelect = document.getElementById('cameraSelect');
+            
+            // Find current camera in the list
+            const currentCamera = availableCameras.find(camera => 
+                camera.deviceId === settings.deviceId
+            );
+            
+            if (currentCamera) {
+                const index = availableCameras.indexOf(currentCamera);
+                cameraSelect.value = index;
+                currentCameraIndex = index;
+            }
+        }
+        
+        async function switchCamera() {
+            if (availableCameras.length <= 1) {
+                showNotification('Hanya ada satu kamera tersedia', 'info');
+                return;
+            }
+            
+            currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
+            await switchToCamera(currentCameraIndex);
+        }
+        
+        async function switchToSelectedCamera() {
+            const cameraSelect = document.getElementById('cameraSelect');
+            const selectedIndex = parseInt(cameraSelect.value);
+            await switchToCamera(selectedIndex);
+        }
+        
+        async function switchToCamera(cameraIndex) {
+            if (!availableCameras[cameraIndex]) return;
+            
+            const video = document.getElementById('cameraPreview');
+            const statusText = document.getElementById('cameraStatusText');
+            
+            try {
+                // Stop current stream
+                if (cameraStream) {
+                    cameraStream.getTracks().forEach(track => track.stop());
+                }
+                
+                // Get quality constraints
+                const qualityConstraints = getQualityConstraints();
+                
+                // Start new stream with selected camera
+                const constraints = {
+                    video: {
+                        ...qualityConstraints,
+                        deviceId: { exact: availableCameras[cameraIndex].deviceId }
+                    }
+                };
+                
+                cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = cameraStream;
+                
+                // Wait for video to load
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = resolve;
+                });
+                
+                // Update status
+                const track = cameraStream.getVideoTracks()[0];
+                const settings = track.getSettings();
+                const label = availableCameras[cameraIndex].label || `Kamera ${cameraIndex + 1}`;
+                statusText.innerHTML = `🔴 ${label} - ${settings.width}x${settings.height}`;
+                
+                currentCameraIndex = cameraIndex;
+                
+                showNotification(`📷 Beralih ke ${label}`, 'success');
+                
+            } catch (error) {
+                console.error('Error switching camera:', error);
+                showNotification('Gagal beralih kamera', 'error');
+            }
+        }
+        
+        async function changeQuality() {
+            const qualitySelect = document.getElementById('qualitySelect');
+            currentQuality = qualitySelect.value;
+            
+            if (cameraStream) {
+                // Restart camera with new quality
+                await switchToCamera(currentCameraIndex);
+                showNotification(`Kualitas diubah ke ${qualitySelect.options[qualitySelect.selectedIndex].text}`, 'success');
+            }
+        }
+        
+        function toggleCameraSettings() {
+            const settingsDiv = document.getElementById('cameraSettings');
+            const toggleBtn = document.getElementById('toggleSettingsBtn');
+            
+            settingsDiv.classList.toggle('hidden');
+            
+            if (settingsDiv.classList.contains('hidden')) {
+                toggleBtn.textContent = '⚙️ Pengaturan Kamera';
+            } else {
+                toggleBtn.textContent = '🔼 Sembunyikan Pengaturan';
+            }
+        }
+        
+        function stopCameraAdvanced() {
+            const video = document.getElementById('cameraPreview');
+            const startBtn = document.getElementById('startCameraBtn');
+            const stopBtn = document.getElementById('stopCameraBtn');
+            const cameraControls = document.getElementById('cameraControls');
+            const statusDiv = document.getElementById('cameraStatus');
+            const settingsDiv = document.getElementById('cameraSettings');
+            
+            // Stop camera stream
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            
+            // Hide camera preview and controls
+            video.classList.add('hidden');
+            startBtn.classList.remove('hidden');
+            stopBtn.classList.add('hidden');
+            cameraControls.classList.add('hidden');
+            statusDiv.classList.add('hidden');
+            settingsDiv.classList.add('hidden');
+            
+            showNotification('📷 Kamera ditutup', 'info');
+        }
+        
+        function capturePhotoAdvanced() {
+            const video = document.getElementById('cameraPreview');
+            const canvas = document.getElementById('photoCanvas');
+            const previewDiv = document.getElementById('photoPreview');
+            const previewImg = document.getElementById('previewImage');
+            const photoInfo = document.getElementById('photoInfo');
+            const retakeBtn = document.getElementById('retakeBtn');
+            const cameraControls = document.getElementById('cameraControls');
+            const statusDiv = document.getElementById('cameraStatus');
+            const settingsDiv = document.getElementById('cameraSettings');
+            
+            if (!video.videoWidth || !video.videoHeight) {
+                showNotification('Kamera belum siap. Tunggu sebentar dan coba lagi.', 'error');
+                return;
+            }
+            
+            // Add capture animation effect
+            video.style.filter = 'brightness(1.5)';
+            setTimeout(() => {
+                video.style.filter = 'none';
+            }, 150);
+            
+            // Set canvas size to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Draw video frame to canvas
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0);
+            
+            // Get compression settings based on quality
+            const compressionSettings = {
+                high: { maxWidth: 1920, maxHeight: 1080, quality: 0.9 },
+                medium: { maxWidth: 1280, maxHeight: 720, quality: 0.8 },
+                low: { maxWidth: 800, maxHeight: 600, quality: 0.7 }
+            };
+            
+            const settings = compressionSettings[currentQuality] || compressionSettings.medium;
+            
+            // Compress image for optimal performance
+            let { width, height } = canvas;
+            const originalWidth = width;
+            const originalHeight = height;
+            
+            // Calculate new dimensions maintaining aspect ratio
+            if (width > height) {
+                if (width > settings.maxWidth) {
+                    height = (height * settings.maxWidth) / width;
+                    width = settings.maxWidth;
+                }
+            } else {
+                if (height > settings.maxHeight) {
+                    width = (width * settings.maxHeight) / height;
+                    height = settings.maxHeight;
+                }
+            }
+            
+            // Create compressed canvas
+            const compressedCanvas = document.createElement('canvas');
+            const compressedContext = compressedCanvas.getContext('2d');
+            compressedCanvas.width = width;
+            compressedCanvas.height = height;
+            
+            // Draw compressed image with better quality
+            compressedContext.imageSmoothingEnabled = true;
+            compressedContext.imageSmoothingQuality = 'high';
+            compressedContext.drawImage(canvas, 0, 0, width, height);
+            
+            // Convert to base64 with optimal compression
+            capturedPhoto = compressedCanvas.toDataURL('image/jpeg', settings.quality);
+            
+            // Calculate file size estimate
+            const fileSizeKB = Math.round((capturedPhoto.length * 0.75) / 1024);
+            
+            // Show preview with info
+            previewImg.src = capturedPhoto;
+            photoInfo.innerHTML = `📷 ${Math.round(width)}x${Math.round(height)}px • ${fileSizeKB}KB • ${currentQuality.toUpperCase()}`;
+            previewDiv.classList.remove('hidden');
+            
+            // Hide camera, show retake button
+            video.classList.add('hidden');
+            retakeBtn.classList.remove('hidden');
+            cameraControls.classList.add('hidden');
+            statusDiv.classList.add('hidden');
+            settingsDiv.classList.add('hidden');
+            
+            // Stop camera stream to save battery
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            
+            showNotification(`📸 Foto berhasil diambil! ${Math.round(width)}x${Math.round(height)}px (${fileSizeKB}KB)`, 'success');
+        }
+        
+        function retakePhotoAdvanced() {
+            // Hide preview and retake button
+            document.getElementById('photoPreview').classList.add('hidden');
+            document.getElementById('retakeBtn').classList.add('hidden');
+            
+            // Show start camera button
+            document.getElementById('startCameraBtn').classList.remove('hidden');
+            
+            // Clear captured photo
+            capturedPhoto = null;
+            
+            // Reset photo info
+            document.getElementById('photoInfo').innerHTML = '📷 Resolusi: Loading...';
+            
+            showNotification('🔄 Siap untuk foto ulang! Klik "Buka Kamera Live"', 'info');
         }
         
         async function submitReport() {
@@ -1023,12 +2158,20 @@ Saat ini data hanya tersimpan lokal di browser ini.`);
             const inactiveOfficers = document.getElementById('inactiveOfficers').value.trim();
             const location = document.getElementById('location').value.trim();
             const description = document.getElementById('description').value.trim();
-            const photo = document.getElementById('previewImage').src || '';
+            const photo = capturedPhoto || '';
             
-            // Validate required fields (inactive officers is optional)
+            // Validate required fields
             if (!team || !shift || !activeOfficers || !location || !description) {
                 showNotification('Mohon lengkapi semua field wajib! (Petugas tidak aktif opsional)', 'error');
                 return;
+            }
+            
+            // Validate photo
+            if (!photo) {
+                const confirmSubmit = confirm('Tidak ada foto dokumentasi. Apakah Anda yakin ingin melanjutkan?');
+                if (!confirmSubmit) {
+                    return;
+                }
             }
             
             const formData = {
@@ -1063,11 +2206,10 @@ Saat ini data hanya tersimpan lokal di browser ini.`);
                 
                 await addDoc(collection(window.db, 'feed'), feedPost);
                 
-                // Reset form
-                document.getElementById('reportForm').reset();
-                document.getElementById('photoPreview').classList.add('hidden');
+                // Reset form and cleanup
+                resetReportForm();
                 
-                showNotification('Laporan berhasil dikirim dan tersimpan di database!', 'success');
+                showNotification('✅ Laporan berhasil dikirim dan tersimpan di database!', 'success');
                 
             } catch (error) {
                 console.log('Error saving to Firebase:', error);
@@ -1100,11 +2242,45 @@ Saat ini data hanya tersimpan lokal di browser ini.`);
                 localFeed.unshift(localFeedPost);
                 localStorage.setItem('ppsu_feed', JSON.stringify(localFeed));
                 
-                // Reset form
-                document.getElementById('reportForm').reset();
-                document.getElementById('photoPreview').classList.add('hidden');
-                
+                resetReportForm();
                 showNotification('Laporan tersimpan lokal (offline mode)', 'info');
+            }
+        }
+        
+        function resetReportForm() {
+            // Reset form
+            document.getElementById('reportForm').reset();
+            
+            // Reset photo components
+            document.getElementById('photoPreview').classList.add('hidden');
+            document.getElementById('startCameraBtn').classList.remove('hidden');
+            document.getElementById('retakeBtn').classList.add('hidden');
+            document.getElementById('stopCameraBtn').classList.add('hidden');
+            document.getElementById('cameraPreview').classList.add('hidden');
+            document.getElementById('cameraControls').classList.add('hidden');
+            document.getElementById('cameraStatus').classList.add('hidden');
+            document.getElementById('cameraSettings').classList.add('hidden');
+            document.getElementById('locationStatus').classList.add('hidden');
+            
+            // Reset photo info
+            document.getElementById('photoInfo').innerHTML = '📷 Resolusi: Loading...';
+            
+            // Reset settings button
+            document.getElementById('toggleSettingsBtn').textContent = '⚙️ Pengaturan Kamera';
+            
+            // Clear captured photo
+            capturedPhoto = null;
+            
+            // Stop any active camera stream
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            
+            // Stop location watching if active
+            if (locationWatchId) {
+                navigator.geolocation.clearWatch(locationWatchId);
+                locationWatchId = null;
             }
         }
         
@@ -1142,7 +2318,7 @@ Saat ini data hanya tersimpan lokal di browser ini.`);
                 document.getElementById('postForm').reset();
                 
                 // Show success notification
-                showNotification('Postingan berhasil dipublikasi ke database!', 'success');
+                showNotification('✅ Postingan berhasil dipublikasi ke database!', 'success');
                 
             } catch (error) {
                 console.log('Error saving post to Firebase:', error);
@@ -1214,7 +2390,7 @@ Saat ini data hanya tersimpan lokal di browser ini.`);
                                     ${post.location}
                                 </div>
                             ` : ''}
-                            ${post.photo ? `<img src="${post.photo}" class="w-full max-w-md rounded-lg mb-4">` : ''}
+                            ${post.photo ? `<img src="${post.photo}" class="w-full max-w-md rounded-lg mb-4 cursor-pointer" onclick="viewPhoto('${post.photo}')">` : ''}
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center space-x-4 text-white/70">
                                     <button onclick="likePost('${post.id}')" class="flex items-center space-x-1 hover:text-red-400 transition-colors">
@@ -1645,6 +2821,23 @@ Saat ini data hanya tersimpan lokal di browser ini.`);
                 notification.classList.remove('show');
             }, 3000);
         }
+        
+        // Cleanup function when page unloads
+        window.addEventListener('beforeunload', function() {
+            // Stop camera stream
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+            }
+            
+            // Stop location watching
+            if (locationWatchId) {
+                navigator.geolocation.clearWatch(locationWatchId);
+            }
+            
+            // Cleanup Firebase listeners
+            if (reportsListener) reportsListener();
+            if (feedListener) feedListener();
+        });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'974d2e6ad383ce51',t:'MTc1NjE0Njg0NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975505ac751efceb',t:'MTc1NjIyOTA2MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
