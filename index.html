@@ -1211,34 +1211,78 @@
             }, 5000);
         }
         
-        // Get address using FREE geocoding service (No API Key)
+        // Get detailed address using FREE geocoding service (No API Key)
         async function getAddressFromFreeService(lat, lng) {
             const sources = [
-                // Primary: BigDataCloud (free, no API key needed)
+                // Primary: BigDataCloud (free, no API key needed) - More detailed
                 {
                     url: `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=id`,
                     parser: (data) => {
-                        if (data.locality && data.city) {
-                            return `${data.locality}, ${data.city}, ${data.countryName}`;
-                        } else if (data.city) {
-                            return `${data.city}, ${data.countryName}`;
-                        } else if (data.principalSubdivision) {
-                            return `${data.principalSubdivision}, ${data.countryName}`;
+                        let addressParts = [];
+                        
+                        // Build detailed address
+                        if (data.localityInfo && data.localityInfo.administrative) {
+                            const admin = data.localityInfo.administrative;
+                            // Try to get street/road info
+                            if (admin.find(a => a.adminLevel === 8)) {
+                                addressParts.push(admin.find(a => a.adminLevel === 8).name);
+                            }
+                        }
+                        
+                        if (data.locality) addressParts.push(data.locality);
+                        if (data.city && data.city !== data.locality) addressParts.push(data.city);
+                        if (data.principalSubdivision) addressParts.push(data.principalSubdivision);
+                        if (data.countryName) addressParts.push(data.countryName);
+                        
+                        return addressParts.length > 0 ? addressParts.join(', ') : null;
+                    }
+                },
+                // Secondary: OpenStreetMap Nominatim (free) - Very detailed
+                {
+                    url: `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=id&addressdetails=1&zoom=18`,
+                    parser: (data) => {
+                        if (data.address) {
+                            const addr = data.address;
+                            let addressParts = [];
+                            
+                            // Build detailed street address
+                            if (addr.house_number && addr.road) {
+                                addressParts.push(`${addr.road} No. ${addr.house_number}`);
+                            } else if (addr.road) {
+                                addressParts.push(addr.road);
+                            }
+                            
+                            // Add area details
+                            if (addr.neighbourhood) addressParts.push(addr.neighbourhood);
+                            if (addr.suburb) addressParts.push(addr.suburb);
+                            if (addr.village) addressParts.push(addr.village);
+                            if (addr.city_district) addressParts.push(addr.city_district);
+                            if (addr.city || addr.town) addressParts.push(addr.city || addr.town);
+                            if (addr.state) addressParts.push(addr.state);
+                            if (addr.country) addressParts.push(addr.country);
+                            
+                            return addressParts.length > 0 ? addressParts.slice(0, 4).join(', ') : null;
                         }
                         return null;
                     }
                 },
-                // Secondary: OpenStreetMap Nominatim (free)
+                // Tertiary: Photon (OpenStreetMap-based)
                 {
-                    url: `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=id`,
+                    url: `https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}&lang=id`,
                     parser: (data) => {
-                        if (data.display_name) {
-                            // Parse and clean the address
-                            const parts = data.display_name.split(',');
-                            if (parts.length >= 3) {
-                                return parts.slice(0, 3).join(', ').trim();
-                            }
-                            return data.display_name;
+                        if (data.features && data.features.length > 0) {
+                            const feature = data.features[0];
+                            const props = feature.properties;
+                            let addressParts = [];
+                            
+                            if (props.name) addressParts.push(props.name);
+                            if (props.street) addressParts.push(props.street);
+                            if (props.district) addressParts.push(props.district);
+                            if (props.city) addressParts.push(props.city);
+                            if (props.state) addressParts.push(props.state);
+                            if (props.country) addressParts.push(props.country);
+                            
+                            return addressParts.length > 0 ? addressParts.slice(0, 4).join(', ') : null;
                         }
                         return null;
                     }
@@ -1252,7 +1296,7 @@
                     if (response.ok) {
                         const data = await response.json();
                         const address = source.parser(data);
-                        if (address) {
+                        if (address && address.length > 10) { // Ensure we get a meaningful address
                             return address;
                         }
                     }
@@ -1922,12 +1966,11 @@
                 return;
             }
             
-            // Validate photo
+            // Validate photo - WAJIB menggunakan kamera live
             if (!photo) {
-                const confirmSubmit = confirm('Tidak ada foto dokumentasi. Apakah Anda yakin ingin melanjutkan?');
-                if (!confirmSubmit) {
-                    return;
-                }
+                showNotification('📸 Foto dokumentasi WAJIB! Gunakan fitur "Buka Kamera Live" untuk mengambil foto.', 'error');
+                document.getElementById('startCameraBtn').scrollIntoView({ behavior: 'smooth' });
+                return;
             }
             
             const formData = {
@@ -2115,7 +2158,7 @@
             
             feedPosts.forEach((post, index) => {
                 const postElement = document.createElement('div');
-                postElement.className = 'bg-white/10 backdrop-blur-md rounded-xl p-4 md:p-6 border border-white/20 card-hover';
+                postElement.className = 'bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-white/30 mb-6 overflow-hidden hover:shadow-2xl transition-all duration-300';
                 
                 // Add animation for new posts
                 if (index === 0) {
@@ -2123,62 +2166,131 @@
                 }
                 
                 const postTypeIcon = post.type === 'report' ? '📋' : '📢';
-                const postTypeLabel = post.type === 'report' ? 'Laporan Kerja' : 'Postingan';
+                const postTypeColor = post.type === 'report' ? 'bg-blue-500' : 'bg-purple-500';
+                const timeAgo = getTimeAgo(new Date(post.date));
                 
                 postElement.innerHTML = `
-                    <div class="flex items-start space-x-4">
-                        <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                            <span class="text-white font-bold">${post.author.charAt(0).toUpperCase()}</span>
-                        </div>
-                        <div class="flex-1">
-                            <div class="flex items-center space-x-2 mb-2">
-                                <h4 class="text-white font-semibold">${post.author}</h4>
-                                <span class="text-white/60 text-sm">• ${post.team}</span>
-                                <span class="text-white/60 text-sm">• ${new Date(post.date).toLocaleString('id-ID')}</span>
-                                <span class="bg-white/20 text-white/80 px-2 py-1 rounded text-xs flex items-center">
-                                    ${postTypeIcon} ${postTypeLabel}
-                                </span>
+                    <!-- Post Header -->
+                    <div class="p-4 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                                    <span class="text-white font-bold text-lg">${post.author.charAt(0).toUpperCase()}</span>
+                                </div>
+                                <div>
+                                    <div class="flex items-center space-x-2">
+                                        <h4 class="text-gray-900 font-semibold text-base">${post.author}</h4>
+                                        <span class="text-gray-500 text-sm">• ${post.team}</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2 text-gray-500 text-sm">
+                                        <span>${timeAgo}</span>
+                                        <span class="${postTypeColor} text-white px-2 py-1 rounded-full text-xs font-medium flex items-center">
+                                            ${postTypeIcon} ${post.type === 'report' ? 'Laporan' : 'Post'}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
-                            <p class="text-white/90 mb-3">${post.content}</p>
-                            ${post.location ? `
-                                <div class="text-white/70 text-sm mb-3 flex items-center">
-                                    <span class="mr-1">📍</span>
-                                    ${post.location}
+                            ${currentUser && currentUser.role === 'admin' ? `
+                                <div class="relative">
+                                    <button onclick="togglePostMenu('${post.id}')" class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-colors">
+                                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path>
+                                        </svg>
+                                    </button>
+                                    <div id="menu-${post.id}" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-10">
+                                        <button onclick="editPost('${post.id}')" class="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-t-lg">
+                                            ✏️ Edit Postingan
+                                        </button>
+                                        <button onclick="deleteFeedPost('${post.id}')" class="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 rounded-b-lg">
+                                            🗑️ Hapus Postingan
+                                        </button>
+                                    </div>
                                 </div>
                             ` : ''}
-                            ${post.photo ? `<img src="${post.photo}" class="w-full max-w-md rounded-lg mb-4 cursor-pointer" onclick="viewPhoto('${post.photo}')">` : ''}
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-4 text-white/70">
-                                    <button onclick="likePost('${post.id}')" class="flex items-center space-x-1 hover:text-red-400 transition-colors">
-                                        <span>❤️</span>
-                                        <span>${post.likes}</span>
-                                    </button>
-                                    <button onclick="toggleComments('${post.id}')" class="flex items-center space-x-1 hover:text-blue-400 transition-colors">
-                                        <span>💬</span>
-                                        <span>${post.comments.length}</span>
-                                    </button>
-                                </div>
-                                ${currentUser && currentUser.role === 'admin' ? `
-                                    <button onclick="deleteFeedPost('${post.id}')" class="text-red-400 hover:text-red-300 transition-colors text-sm">
-                                        🗑️ Hapus
-                                    </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Post Content -->
+                    <div class="px-4 py-3">
+                        <p class="text-gray-800 text-base leading-relaxed mb-3">${post.content}</p>
+                        ${post.location ? `
+                            <div class="flex items-center text-gray-600 text-sm mb-3 bg-gray-50 rounded-lg p-2">
+                                <svg class="w-4 h-4 mr-2 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span class="font-medium">${post.location}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <!-- Post Photo -->
+                    ${post.photo ? `
+                        <div class="px-4 pb-3">
+                            <img src="${post.photo}" class="w-full rounded-xl cursor-pointer hover:opacity-95 transition-opacity shadow-md" onclick="viewPhoto('${post.photo}')">
+                        </div>
+                    ` : ''}
+                    
+                    <!-- Post Stats -->
+                    <div class="px-4 py-2 border-t border-gray-200 bg-gray-50">
+                        <div class="flex items-center justify-between text-gray-500 text-sm">
+                            <div class="flex items-center space-x-4">
+                                ${post.likes > 0 ? `
+                                    <span class="flex items-center">
+                                        <span class="text-red-500 mr-1">❤️</span>
+                                        ${post.likes} suka
+                                    </span>
+                                ` : ''}
+                                ${post.comments.length > 0 ? `
+                                    <span>${post.comments.length} komentar</span>
                                 ` : ''}
                             </div>
-                            <div id="comments-${post.id}" class="hidden mt-4 space-y-3">
-                                <div class="space-y-2">
-                                    ${post.comments.map(comment => `
-                                        <div class="bg-white/5 rounded-lg p-3">
-                                            <div class="flex items-center space-x-2 mb-1">
-                                                <span class="text-white font-medium text-sm">${comment.author}</span>
-                                                <span class="text-white/50 text-xs">${new Date(comment.date).toLocaleString('id-ID')}</span>
-                                            </div>
-                                            <p class="text-white/80 text-sm">${comment.text}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="px-4 py-2 border-t border-gray-200 bg-white">
+                        <div class="flex items-center justify-around">
+                            <button onclick="likePost('${post.id}')" class="flex items-center justify-center space-x-2 py-2 px-4 rounded-lg hover:bg-gray-100 transition-colors flex-1 ${post.likes > 0 ? 'text-red-500' : 'text-gray-600'}">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span class="font-medium">Suka</span>
+                            </button>
+                            <button onclick="toggleComments('${post.id}')" class="flex items-center justify-center space-x-2 py-2 px-4 rounded-lg hover:bg-gray-100 transition-colors flex-1 text-gray-600">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span class="font-medium">Komentar</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Comments Section -->
+                    <div id="comments-${post.id}" class="hidden border-t border-gray-200 bg-gray-50">
+                        <div class="p-4 space-y-3">
+                            ${post.comments.map(comment => `
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center">
+                                        <span class="text-white font-medium text-sm">${comment.author.charAt(0).toUpperCase()}</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="bg-white rounded-2xl px-4 py-2 shadow-sm">
+                                            <div class="font-medium text-gray-900 text-sm">${comment.author}</div>
+                                            <p class="text-gray-800 text-sm">${comment.text}</p>
                                         </div>
-                                    `).join('')}
+                                        <div class="text-gray-500 text-xs mt-1 ml-4">${getTimeAgo(new Date(comment.date))}</div>
+                                    </div>
                                 </div>
-                                <div class="flex space-x-2">
-                                    <input type="text" id="comment-input-${post.id}" placeholder="Tulis komentar..." class="flex-1 px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-                                    <button onclick="addComment('${post.id}')" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg text-sm hover:shadow-lg transition-all">
+                            `).join('')}
+                            
+                            <!-- Add Comment -->
+                            <div class="flex items-center space-x-3 pt-2">
+                                <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                                    <span class="text-white font-medium text-sm">A</span>
+                                </div>
+                                <div class="flex-1 flex space-x-2">
+                                    <input type="text" id="comment-input-${post.id}" placeholder="Tulis komentar..." class="flex-1 px-4 py-2 rounded-full bg-white border border-gray-300 text-gray-800 placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <button onclick="addComment('${post.id}')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors">
                                         Kirim
                                     </button>
                                 </div>
@@ -2189,6 +2301,38 @@
                 container.appendChild(postElement);
             });
         }
+        
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+            
+            if (diffInSeconds < 60) return 'Baru saja';
+            if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} menit lalu`;
+            if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} jam lalu`;
+            if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} hari lalu`;
+            
+            return date.toLocaleDateString('id-ID', { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric' 
+            });
+        }
+        
+        function togglePostMenu(postId) {
+            const menu = document.getElementById(`menu-${postId}`);
+            // Close all other menus
+            document.querySelectorAll('[id^="menu-"]').forEach(m => {
+                if (m.id !== `menu-${postId}`) m.classList.add('hidden');
+            });
+            menu.classList.toggle('hidden');
+        }
+        
+        // Close menus when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('[onclick*="togglePostMenu"]')) {
+                document.querySelectorAll('[id^="menu-"]').forEach(m => m.classList.add('hidden'));
+            }
+        });
         
         async function likePost(postId) {
             try {
@@ -2329,23 +2473,79 @@
             feedPosts.forEach(post => {
                 const row = document.createElement('tr');
                 row.className = 'border-b border-white/10 hover:bg-white/5 transition-colors';
+                const timeAgo = getTimeAgo(new Date(post.date));
+                
                 row.innerHTML = `
-                    <td class="py-3 px-4">${new Date(post.date).toLocaleDateString('id-ID')}</td>
-                    <td class="py-3 px-4">${post.author}</td>
-                    <td class="py-3 px-4">${post.team}</td>
-                    <td class="py-3 px-4">${post.content.substring(0, 50)}...</td>
-                    <td class="py-3 px-4">
-                        <span class="bg-${post.type === 'report' ? 'blue' : 'purple'}-500 text-white px-2 py-1 rounded text-sm">
-                            ${post.type === 'report' ? 'Laporan' : 'Postingan'}
-                        </span>
+                    <td class="py-4 px-4">
+                        <div class="flex flex-col">
+                            <span class="text-white font-medium">${new Date(post.date).toLocaleDateString('id-ID')}</span>
+                            <span class="text-white/60 text-xs">${timeAgo}</span>
+                        </div>
                     </td>
-                    <td class="py-3 px-4">
-                        <div class="flex space-x-2">
-                            <button onclick="editPost('${post.id}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors">
-                                ✏️ Edit
+                    <td class="py-4 px-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                                <span class="text-white font-bold text-sm">${post.author.charAt(0).toUpperCase()}</span>
+                            </div>
+                            <span class="text-white font-medium">${post.author}</span>
+                        </div>
+                    </td>
+                    <td class="py-4 px-4">
+                        <span class="bg-white/20 text-white px-2 py-1 rounded-lg text-sm font-medium">${post.team}</span>
+                    </td>
+                    <td class="py-4 px-4 max-w-xs">
+                        <div class="text-white/90 text-sm leading-relaxed">
+                            ${post.content.length > 80 ? post.content.substring(0, 80) + '...' : post.content}
+                        </div>
+                        ${post.location ? `
+                            <div class="text-white/60 text-xs mt-1 flex items-center">
+                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+                                </svg>
+                                ${post.location.length > 30 ? post.location.substring(0, 30) + '...' : post.location}
+                            </div>
+                        ` : ''}
+                        ${post.photo ? `
+                            <div class="mt-2">
+                                <img src="${post.photo}" class="w-16 h-16 object-cover rounded-lg cursor-pointer border-2 border-white/20" onclick="viewPhoto('${post.photo}')" title="Klik untuk melihat foto">
+                            </div>
+                        ` : ''}
+                    </td>
+                    <td class="py-4 px-4">
+                        <div class="flex flex-col space-y-2">
+                            <span class="bg-${post.type === 'report' ? 'blue' : 'purple'}-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center w-fit">
+                                ${post.type === 'report' ? '📋' : '📢'} ${post.type === 'report' ? 'Laporan' : 'Post'}
+                            </span>
+                            <div class="flex items-center space-x-3 text-white/60 text-xs">
+                                <span class="flex items-center">
+                                    <svg class="w-3 h-3 mr-1 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    ${post.likes}
+                                </span>
+                                <span class="flex items-center">
+                                    <svg class="w-3 h-3 mr-1 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    ${post.comments.length}
+                                </span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-4 px-4">
+                        <div class="flex flex-col space-y-2">
+                            <button onclick="editPost('${post.id}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center">
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path>
+                                </svg>
+                                Edit
                             </button>
-                            <button onclick="deleteFeedPost('${post.id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors">
-                                🗑️ Hapus
+                            <button onclick="deleteFeedPost('${post.id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center">
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clip-rule="evenodd"></path>
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 012 0v4a1 1 0 11-2 0V7zM12 7a1 1 0 012 0v4a1 1 0 11-2 0V7z" clip-rule="evenodd"></path>
+                                </svg>
+                                Hapus
                             </button>
                         </div>
                     </td>
@@ -2595,5 +2795,5 @@
             if (feedListener) feedListener();
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97554ec7928cff7e',t:'MTc1NjIzMjA1NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97556befb04f5f2f',t:'MTc1NjIzMzI0OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
