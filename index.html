@@ -7,8 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Google Maps API -->
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&libraries=places&callback=initGoogleMaps"></script>
+    <!-- OpenStreetMap Leaflet (Free Alternative) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
@@ -470,7 +471,7 @@
                             <div class="flex flex-col sm:flex-row gap-2">
                                 <input type="text" id="location" placeholder="Klik 'Ambil Lokasi' atau ketik manual" class="flex-1 px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
                                 <button type="button" id="locationBtn" onclick="getLocationWithGoogleMaps()" class="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm whitespace-nowrap">
-                                    🗺️ Ambil Lokasi
+                                    📍 Ambil Lokasi
                                 </button>
                                 <button type="button" id="showMapBtn" onclick="toggleLocationMap()" class="bg-gradient-to-r from-green-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm whitespace-nowrap">
                                     📍 Lihat Peta
@@ -483,7 +484,7 @@
                             <!-- Google Maps Container -->
                             <div id="locationMapContainer" class="map-container hidden">
                                 <div class="map-overlay">
-                                    <span>🗺️ Google Maps</span>
+                                    <span>🗺️ OpenStreetMap</span>
                                     <span id="mapAccuracy" class="location-accuracy">GPS Aktif</span>
                                 </div>
                                 <div id="locationMap" class="google-map"></div>
@@ -497,7 +498,7 @@
                                 </div>
                             </div>
                             
-                            <p class="text-white/50 text-xs mt-1">🗺️ <strong>Google Maps Terintegrasi:</strong> Lokasi akurat dengan peta visual dan Places API</p>
+
                         </div>
                         
                         <div>
@@ -631,7 +632,7 @@
                             <div class="flex flex-col sm:flex-row gap-2">
                                 <input type="text" id="postLocation" placeholder="Masukkan lokasi atau ambil otomatis" class="flex-1 px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
                                 <button type="button" onclick="getPostLocationWithGoogleMaps()" class="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm whitespace-nowrap">
-                                    🗺️ Ambil Lokasi
+                                    📍 Ambil Lokasi
                                 </button>
                                 <button type="button" onclick="togglePostLocationMap()" class="bg-gradient-to-r from-green-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm whitespace-nowrap">
                                     📍 Lihat Peta
@@ -641,7 +642,7 @@
                             <!-- Google Maps Container for Posts -->
                             <div id="postLocationMapContainer" class="map-container hidden">
                                 <div class="map-overlay">
-                                    <span>🗺️ Google Maps</span>
+                                    <span>🗺️ OpenStreetMap</span>
                                     <span id="postMapAccuracy" class="location-accuracy">GPS Aktif</span>
                                 </div>
                                 <div id="postLocationMap" class="google-map"></div>
@@ -917,24 +918,14 @@
         let currentCameraIndex = 0;
         let currentQuality = 'medium';
         
-        // Google Maps variables
-        let googleMapsLoaded = false;
+        // OpenStreetMap variables (Free)
+        let mapsLoaded = true; // Always available
         let locationMap = null;
         let postLocationMap = null;
         let currentLocationMarker = null;
         let postLocationMarker = null;
         let currentMapPosition = null;
         let postMapPosition = null;
-        let geocoder = null;
-        let placesService = null;
-        
-        // Initialize Google Maps
-        function initGoogleMaps() {
-            googleMapsLoaded = true;
-            geocoder = new google.maps.Geocoder();
-            console.log('🗺️ Google Maps API loaded successfully!');
-            showNotification('🗺️ Google Maps siap digunakan!', 'success');
-        }
         
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
@@ -1123,14 +1114,8 @@
             }, 50);
         }
         
-        // GOOGLE MAPS INTEGRATED LOCATION FUNCTIONS
+        // FREE GPS LOCATION FUNCTIONS (No API Key Required)
         async function getLocationWithGoogleMaps() {
-            if (!googleMapsLoaded) {
-                showNotification('⏳ Google Maps sedang dimuat...', 'info');
-                setTimeout(() => getLocationWithGoogleMaps(), 2000);
-                return;
-            }
-            
             const locationInput = document.getElementById('location');
             const button = document.getElementById('locationBtn');
             const statusDiv = document.getElementById('locationStatus');
@@ -1141,437 +1126,9 @@
             button.disabled = true;
             statusDiv.className = 'location-status loading';
             statusDiv.classList.remove('hidden');
-            statusText.textContent = '🗺️ Mengambil lokasi dengan Google Maps...';
+            statusText.textContent = '📍 Mengambil lokasi GPS...';
             
             if (!navigator.geolocation) {
-                locationInput.readOnly = false;
-                locationInput.placeholder = 'GPS tidak tersedia - Masukkan lokasi manual';
-                locationInput.focus();
-                
-                statusDiv.className = 'location-status error';
-                statusText.textContent = '❌ GPS tidak tersedia - Input manual aktif';
-                
-                button.innerHTML = '🗺️ Ambil Lokasi';
-                button.disabled = false;
-                
-                showNotification('GPS tidak tersedia. Silakan input lokasi manual.', 'info');
-                return;
-            }
-            
-            const options = {
-                enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 30000
-            };
-            
-            try {
-                const position = await new Promise((resolve, reject) => {
-                    navigator.geolocation.getCurrentPosition(resolve, reject, options);
-                });
-                
-                const lat = position.coords.latitude;
-                const lon = position.coords.longitude;
-                const accuracy = position.coords.accuracy;
-                
-                statusText.textContent = `🗺️ GPS ditemukan (akurasi: ${Math.round(accuracy)}m) - Mengambil alamat Google...`;
-                
-                // Use Google Maps Geocoding API for better accuracy
-                const address = await getAddressFromGoogleMaps(lat, lon);
-                
-                if (address) {
-                    locationInput.value = address;
-                    statusDiv.className = 'location-status success';
-                    statusText.textContent = `✅ Lokasi Google Maps (akurasi: ${Math.round(accuracy)}m)`;
-                    showNotification(`🗺️ Lokasi berhasil diambil dengan Google Maps! Akurasi ${Math.round(accuracy)}m`, 'success');
-                    
-                    // Store position for map display
-                    currentMapPosition = { lat, lng: lon, accuracy };
-                } else {
-                    // Fallback to coordinates
-                    locationInput.value = `Koordinat: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
-                    statusDiv.className = 'location-status success';
-                    statusText.textContent = `✅ Koordinat GPS (akurasi: ${Math.round(accuracy)}m)`;
-                    showNotification('Lokasi diambil dalam bentuk koordinat GPS', 'info');
-                    
-                    currentMapPosition = { lat, lng: lon, accuracy };
-                }
-                
-            } catch (error) {
-                console.error('Google Maps location error:', error);
-                
-                let errorMessage = 'GPS tidak dapat diakses';
-                if (error.code === 1) {
-                    errorMessage = 'Izin GPS ditolak - Aktifkan di pengaturan browser';
-                } else if (error.code === 2) {
-                    errorMessage = 'Posisi tidak tersedia - Coba di area terbuka';
-                } else if (error.code === 3) {
-                    errorMessage = 'Timeout GPS - Sinyal lemah';
-                }
-                
-                locationInput.readOnly = false;
-                locationInput.placeholder = 'GPS gagal - Masukkan lokasi manual';
-                locationInput.focus();
-                
-                statusDiv.className = 'location-status error';
-                statusText.textContent = `❌ ${errorMessage}`;
-                
-                showNotification(`${errorMessage}. Input manual diaktifkan.`, 'info');
-            }
-            
-            button.innerHTML = '🗺️ Ambil Lokasi';
-            button.disabled = false;
-            
-            setTimeout(() => {
-                statusDiv.classList.add('hidden');
-            }, 5000);
-        }
-        
-        // Get address using Google Maps Geocoding API
-        async function getAddressFromGoogleMaps(lat, lng) {
-            if (!geocoder) return null;
-            
-            try {
-                const result = await new Promise((resolve, reject) => {
-                    geocoder.geocode(
-                        { location: { lat, lng } },
-                        (results, status) => {
-                            if (status === 'OK' && results[0]) {
-                                resolve(results[0]);
-                            } else {
-                                reject(new Error('Geocoding failed'));
-                            }
-                        }
-                    );
-                });
-                
-                // Parse the formatted address for better readability
-                const address = result.formatted_address;
-                
-                // Try to get a cleaner address
-                const addressComponents = result.address_components;
-                let cleanAddress = '';
-                
-                // Build a clean address from components
-                const streetNumber = addressComponents.find(c => c.types.includes('street_number'))?.long_name || '';
-                const route = addressComponents.find(c => c.types.includes('route'))?.long_name || '';
-                const locality = addressComponents.find(c => c.types.includes('administrative_area_level_4'))?.long_name || 
-                                addressComponents.find(c => c.types.includes('locality'))?.long_name || '';
-                const city = addressComponents.find(c => c.types.includes('administrative_area_level_2'))?.long_name || '';
-                const province = addressComponents.find(c => c.types.includes('administrative_area_level_1'))?.long_name || '';
-                
-                if (streetNumber && route) {
-                    cleanAddress = `${route} ${streetNumber}`;
-                } else if (route) {
-                    cleanAddress = route;
-                } else if (locality) {
-                    cleanAddress = locality;
-                }
-                
-                if (locality && cleanAddress !== locality) {
-                    cleanAddress += `, ${locality}`;
-                }
-                
-                if (city && !cleanAddress.includes(city)) {
-                    cleanAddress += `, ${city}`;
-                }
-                
-                return cleanAddress || address;
-                
-            } catch (error) {
-                console.log('Google Geocoding error:', error);
-                return null;
-            }
-        }
-        
-        // Toggle location map display
-        function toggleLocationMap() {
-            const mapContainer = document.getElementById('locationMapContainer');
-            const showMapBtn = document.getElementById('showMapBtn');
-            
-            if (mapContainer.classList.contains('hidden')) {
-                // Show map
-                mapContainer.classList.remove('hidden');
-                showMapBtn.textContent = '🔼 Sembunyikan Peta';
-                
-                // Initialize map if not already done
-                if (!locationMap) {
-                    initializeLocationMap();
-                }
-            } else {
-                // Hide map
-                mapContainer.classList.add('hidden');
-                showMapBtn.textContent = '📍 Lihat Peta';
-            }
-        }
-        
-        // Initialize location map
-        function initializeLocationMap() {
-            if (!googleMapsLoaded) {
-                showNotification('Google Maps belum dimuat', 'error');
-                return;
-            }
-            
-            const mapElement = document.getElementById('locationMap');
-            const accuracyElement = document.getElementById('mapAccuracy');
-            
-            // Default to Jakarta if no position available
-            const defaultPosition = { lat: -6.2088, lng: 106.8456 };
-            const initialPosition = currentMapPosition || defaultPosition;
-            
-            // Create map
-            locationMap = new google.maps.Map(mapElement, {
-                zoom: currentMapPosition ? 16 : 11,
-                center: initialPosition,
-                mapTypeId: google.maps.MapTypeId.ROADMAP,
-                streetViewControl: false,
-                mapTypeControl: true,
-                fullscreenControl: true,
-                zoomControl: true
-            });
-            
-            // Add marker
-            currentLocationMarker = new google.maps.Marker({
-                position: initialPosition,
-                map: locationMap,
-                draggable: true,
-                title: 'Lokasi Kerja',
-                icon: {
-                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                        <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="16" cy="16" r="8" fill="#3B82F6" stroke="white" stroke-width="2"/>
-                            <circle cx="16" cy="16" r="3" fill="white"/>
-                        </svg>
-                    `),
-                    scaledSize: new google.maps.Size(32, 32),
-                    anchor: new google.maps.Point(16, 16)
-                }
-            });
-            
-            // Update accuracy display
-            if (currentMapPosition && currentMapPosition.accuracy) {
-                accuracyElement.textContent = `Akurasi: ${Math.round(currentMapPosition.accuracy)}m`;
-            }
-            
-            // Add click listener to map
-            locationMap.addListener('click', (event) => {
-                const position = event.latLng;
-                currentLocationMarker.setPosition(position);
-                currentMapPosition = {
-                    lat: position.lat(),
-                    lng: position.lng()
-                };
-                
-                // Update address
-                updateAddressFromMapPosition(position.lat(), position.lng(), 'location');
-            });
-            
-            // Add drag listener to marker
-            currentLocationMarker.addListener('dragend', (event) => {
-                const position = event.latLng;
-                currentMapPosition = {
-                    lat: position.lat(),
-                    lng: position.lng()
-                };
-                
-                // Update address
-                updateAddressFromMapPosition(position.lat(), position.lng(), 'location');
-            });
-            
-            showNotification('🗺️ Peta Google Maps siap! Klik atau drag marker untuk memilih lokasi', 'success');
-        }
-        
-        // Update address from map position
-        async function updateAddressFromMapPosition(lat, lng, inputType) {
-            const address = await getAddressFromGoogleMaps(lat, lng);
-            if (address) {
-                const inputElement = document.getElementById(inputType);
-                inputElement.value = address;
-                showNotification('📍 Alamat diperbarui dari peta', 'success');
-            }
-        }
-        
-        // Confirm map location
-        function confirmMapLocation() {
-            if (currentMapPosition) {
-                const locationInput = document.getElementById('location');
-                if (!locationInput.value.trim()) {
-                    updateAddressFromMapPosition(currentMapPosition.lat, currentMapPosition.lng, 'location');
-                }
-                toggleLocationMap();
-                showNotification('✅ Lokasi dari peta dikonfirmasi!', 'success');
-            } else {
-                showNotification('Pilih lokasi di peta terlebih dahulu', 'error');
-            }
-        }
-        
-        // Post location functions
-        async function getPostLocationWithGoogleMaps() {
-            if (!googleMapsLoaded) {
-                showNotification('⏳ Google Maps sedang dimuat...', 'info');
-                setTimeout(() => getPostLocationWithGoogleMaps(), 2000);
-                return;
-            }
-            
-            const locationInput = document.getElementById('postLocation');
-            const button = event.target;
-            
-            button.innerHTML = '⏳ Mengambil...';
-            button.disabled = true;
-            
-            if (!navigator.geolocation) {
-                showNotification('GPS tidak tersedia. Input manual tersedia.', 'info');
-                button.innerHTML = '🗺️ Ambil Lokasi';
-                button.disabled = false;
-                return;
-            }
-            
-            const options = {
-                enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 30000
-            };
-            
-            try {
-                const position = await new Promise((resolve, reject) => {
-                    navigator.geolocation.getCurrentPosition(resolve, reject, options);
-                });
-                
-                const lat = position.coords.latitude;
-                const lon = position.coords.longitude;
-                const accuracy = position.coords.accuracy;
-                
-                const address = await getAddressFromGoogleMaps(lat, lon);
-                
-                if (address) {
-                    locationInput.value = address;
-                    showNotification(`🗺️ Lokasi Google Maps berhasil! Akurasi ${Math.round(accuracy)}m`, 'success');
-                    postMapPosition = { lat, lng: lon, accuracy };
-                } else {
-                    locationInput.value = `Koordinat: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
-                    showNotification('Lokasi diambil dalam bentuk koordinat GPS', 'info');
-                    postMapPosition = { lat, lng: lon, accuracy };
-                }
-                
-            } catch (error) {
-                console.error('Post location error:', error);
-                showNotification('GPS gagal. Silakan input lokasi manual.', 'info');
-            }
-            
-            button.innerHTML = '🗺️ Ambil Lokasi';
-            button.disabled = false;
-        }
-        
-        function togglePostLocationMap() {
-            const mapContainer = document.getElementById('postLocationMapContainer');
-            const button = event.target;
-            
-            if (mapContainer.classList.contains('hidden')) {
-                mapContainer.classList.remove('hidden');
-                button.textContent = '🔼 Sembunyikan Peta';
-                
-                if (!postLocationMap) {
-                    initializePostLocationMap();
-                }
-            } else {
-                mapContainer.classList.add('hidden');
-                button.textContent = '📍 Lihat Peta';
-            }
-        }
-        
-        function initializePostLocationMap() {
-            if (!googleMapsLoaded) {
-                showNotification('Google Maps belum dimuat', 'error');
-                return;
-            }
-            
-            const mapElement = document.getElementById('postLocationMap');
-            const accuracyElement = document.getElementById('postMapAccuracy');
-            
-            const defaultPosition = { lat: -6.2088, lng: 106.8456 };
-            const initialPosition = postMapPosition || defaultPosition;
-            
-            postLocationMap = new google.maps.Map(mapElement, {
-                zoom: postMapPosition ? 16 : 11,
-                center: initialPosition,
-                mapTypeId: google.maps.MapTypeId.ROADMAP,
-                streetViewControl: false,
-                mapTypeControl: true,
-                fullscreenControl: true,
-                zoomControl: true
-            });
-            
-            postLocationMarker = new google.maps.Marker({
-                position: initialPosition,
-                map: postLocationMap,
-                draggable: true,
-                title: 'Lokasi Postingan',
-                icon: {
-                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                        <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="16" cy="16" r="8" fill="#10B981" stroke="white" stroke-width="2"/>
-                            <circle cx="16" cy="16" r="3" fill="white"/>
-                        </svg>
-                    `),
-                    scaledSize: new google.maps.Size(32, 32),
-                    anchor: new google.maps.Point(16, 16)
-                }
-            });
-            
-            if (postMapPosition && postMapPosition.accuracy) {
-                accuracyElement.textContent = `Akurasi: ${Math.round(postMapPosition.accuracy)}m`;
-            }
-            
-            postLocationMap.addListener('click', (event) => {
-                const position = event.latLng;
-                postLocationMarker.setPosition(position);
-                postMapPosition = {
-                    lat: position.lat(),
-                    lng: position.lng()
-                };
-                updateAddressFromMapPosition(position.lat(), position.lng(), 'postLocation');
-            });
-            
-            postLocationMarker.addListener('dragend', (event) => {
-                const position = event.latLng;
-                postMapPosition = {
-                    lat: position.lat(),
-                    lng: position.lng()
-                };
-                updateAddressFromMapPosition(position.lat(), position.lng(), 'postLocation');
-            });
-            
-            showNotification('🗺️ Peta postingan siap! Klik atau drag marker untuk memilih lokasi', 'success');
-        }
-        
-        function confirmPostMapLocation() {
-            if (postMapPosition) {
-                const locationInput = document.getElementById('postLocation');
-                if (!locationInput.value.trim()) {
-                    updateAddressFromMapPosition(postMapPosition.lat, postMapPosition.lng, 'postLocation');
-                }
-                togglePostLocationMap();
-                showNotification('✅ Lokasi postingan dari peta dikonfirmasi!', 'success');
-            } else {
-                showNotification('Pilih lokasi di peta terlebih dahulu', 'error');
-            }
-        }
-        
-        // LEGACY LOCATION FUNCTIONS (FALLBACK)
-        async function getLocationAccurate() {
-            const locationInput = document.getElementById('location');
-            const button = document.getElementById('locationBtn');
-            const statusDiv = document.getElementById('locationStatus');
-            const statusText = document.getElementById('locationStatusText');
-            
-            // Show loading state
-            button.innerHTML = '⏳ Mengambil...';
-            button.disabled = true;
-            statusDiv.className = 'location-status loading';
-            statusDiv.classList.remove('hidden');
-            statusText.textContent = 'Mengambil lokasi dengan GPS akurat...';
-            
-            if (!navigator.geolocation) {
-                // Fallback to manual input
                 locationInput.readOnly = false;
                 locationInput.placeholder = 'GPS tidak tersedia - Masukkan lokasi manual';
                 locationInput.focus();
@@ -1586,15 +1143,13 @@
                 return;
             }
             
-            // High accuracy GPS options
             const options = {
                 enableHighAccuracy: true,
-                timeout: 15000, // 15 seconds timeout
-                maximumAge: 30000 // 30 seconds cache
+                timeout: 15000,
+                maximumAge: 30000
             };
             
             try {
-                // Get current position with high accuracy
                 const position = await new Promise((resolve, reject) => {
                     navigator.geolocation.getCurrentPosition(resolve, reject, options);
                 });
@@ -1603,28 +1158,32 @@
                 const lon = position.coords.longitude;
                 const accuracy = position.coords.accuracy;
                 
-                statusText.textContent = `📡 GPS ditemukan (akurasi: ${Math.round(accuracy)}m) - Mengambil alamat...`;
+                statusText.textContent = `📍 GPS ditemukan (akurasi: ${Math.round(accuracy)}m) - Mengambil alamat...`;
                 
-                // Try multiple geocoding services for better accuracy
-                let address = await getAddressFromMultipleSources(lat, lon);
+                // Use free geocoding service
+                const address = await getAddressFromFreeService(lat, lon);
                 
                 if (address) {
                     locationInput.value = address;
                     statusDiv.className = 'location-status success';
-                    statusText.textContent = `✅ Lokasi berhasil diambil (akurasi: ${Math.round(accuracy)}m)`;
-                    showNotification(`Lokasi berhasil diambil dengan akurasi ${Math.round(accuracy)} meter!`, 'success');
+                    statusText.textContent = `✅ Lokasi berhasil (akurasi: ${Math.round(accuracy)}m)`;
+                    showNotification(`📍 Lokasi berhasil diambil! Akurasi ${Math.round(accuracy)}m`, 'success');
+                    
+                    // Store position for map display
+                    currentMapPosition = { lat, lng: lon, accuracy };
                 } else {
                     // Fallback to coordinates
                     locationInput.value = `Koordinat: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
                     statusDiv.className = 'location-status success';
                     statusText.textContent = `✅ Koordinat GPS (akurasi: ${Math.round(accuracy)}m)`;
                     showNotification('Lokasi diambil dalam bentuk koordinat GPS', 'info');
+                    
+                    currentMapPosition = { lat, lng: lon, accuracy };
                 }
                 
             } catch (error) {
-                console.error('Geolocation error:', error);
+                console.error('GPS location error:', error);
                 
-                // Handle different error types
                 let errorMessage = 'GPS tidak dapat diakses';
                 if (error.code === 1) {
                     errorMessage = 'Izin GPS ditolak - Aktifkan di pengaturan browser';
@@ -1634,7 +1193,6 @@
                     errorMessage = 'Timeout GPS - Sinyal lemah';
                 }
                 
-                // Enable manual input
                 locationInput.readOnly = false;
                 locationInput.placeholder = 'GPS gagal - Masukkan lokasi manual';
                 locationInput.focus();
@@ -1645,22 +1203,20 @@
                 showNotification(`${errorMessage}. Input manual diaktifkan.`, 'info');
             }
             
-            // Reset button
             button.innerHTML = '📍 Ambil Lokasi';
             button.disabled = false;
             
-            // Hide status after 5 seconds
             setTimeout(() => {
                 statusDiv.classList.add('hidden');
             }, 5000);
         }
         
-        // Get address from multiple geocoding sources
-        async function getAddressFromMultipleSources(lat, lon) {
+        // Get address using FREE geocoding service (No API Key)
+        async function getAddressFromFreeService(lat, lng) {
             const sources = [
                 // Primary: BigDataCloud (free, no API key needed)
                 {
-                    url: `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=id`,
+                    url: `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=id`,
                     parser: (data) => {
                         if (data.locality && data.city) {
                             return `${data.locality}, ${data.city}, ${data.countryName}`;
@@ -1672,9 +1228,9 @@
                         return null;
                     }
                 },
-                // Secondary: OpenStreetMap Nominatim
+                // Secondary: OpenStreetMap Nominatim (free)
                 {
-                    url: `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=id`,
+                    url: `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=id`,
                     parser: (data) => {
                         if (data.display_name) {
                             // Parse and clean the address
@@ -1709,12 +1265,123 @@
             return null; // All sources failed
         }
         
-        // Post location with same accuracy
-        async function getPostLocationAccurate() {
+        // Toggle location map display (FREE OpenStreetMap)
+        function toggleLocationMap() {
+            const mapContainer = document.getElementById('locationMapContainer');
+            const showMapBtn = document.getElementById('showMapBtn');
+            
+            if (mapContainer.classList.contains('hidden')) {
+                // Show map
+                mapContainer.classList.remove('hidden');
+                showMapBtn.textContent = '🔼 Sembunyikan Peta';
+                
+                // Initialize map if not already done
+                if (!locationMap) {
+                    initializeLocationMap();
+                }
+            } else {
+                // Hide map
+                mapContainer.classList.add('hidden');
+                showMapBtn.textContent = '📍 Lihat Peta';
+            }
+        }
+        
+        // Initialize location map (FREE OpenStreetMap)
+        function initializeLocationMap() {
+            const mapElement = document.getElementById('locationMap');
+            const accuracyElement = document.getElementById('mapAccuracy');
+            
+            // Default to Jakarta if no position available
+            const defaultPosition = [-6.2088, 106.8456];
+            const initialPosition = currentMapPosition ? [currentMapPosition.lat, currentMapPosition.lng] : defaultPosition;
+            
+            // Create Leaflet map (FREE)
+            locationMap = L.map(mapElement).setView(initialPosition, currentMapPosition ? 16 : 11);
+            
+            // Add OpenStreetMap tiles (FREE)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(locationMap);
+            
+            // Add marker
+            const blueIcon = L.divIcon({
+                html: `<div style="background: #3B82F6; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+            
+            currentLocationMarker = L.marker(initialPosition, { 
+                draggable: true,
+                icon: blueIcon
+            }).addTo(locationMap);
+            
+            // Update accuracy display
+            if (currentMapPosition && currentMapPosition.accuracy) {
+                accuracyElement.textContent = `Akurasi: ${Math.round(currentMapPosition.accuracy)}m`;
+            } else {
+                accuracyElement.textContent = 'Peta Interaktif';
+            }
+            
+            // Add click listener to map
+            locationMap.on('click', (event) => {
+                const lat = event.latlng.lat;
+                const lng = event.latlng.lng;
+                
+                currentLocationMarker.setLatLng([lat, lng]);
+                currentMapPosition = { lat, lng };
+                
+                // Update address
+                updateAddressFromMapPosition(lat, lng, 'location');
+            });
+            
+            // Add drag listener to marker
+            currentLocationMarker.on('dragend', (event) => {
+                const lat = event.target.getLatLng().lat;
+                const lng = event.target.getLatLng().lng;
+                
+                currentMapPosition = { lat, lng };
+                
+                // Update address
+                updateAddressFromMapPosition(lat, lng, 'location');
+            });
+            
+            showNotification('🗺️ Peta OpenStreetMap siap! Klik atau drag marker untuk memilih lokasi', 'success');
+        }
+        
+        // Update address from map position (FREE service)
+        async function updateAddressFromMapPosition(lat, lng, inputType) {
+            const address = await getAddressFromFreeService(lat, lng);
+            if (address) {
+                const inputElement = document.getElementById(inputType);
+                inputElement.value = address;
+                showNotification('📍 Alamat diperbarui dari peta', 'success');
+            } else {
+                const inputElement = document.getElementById(inputType);
+                inputElement.value = `Koordinat: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                showNotification('📍 Koordinat diperbarui dari peta', 'info');
+            }
+        }
+        
+        // Confirm map location
+        function confirmMapLocation() {
+            if (currentMapPosition) {
+                const locationInput = document.getElementById('location');
+                if (!locationInput.value.trim()) {
+                    updateAddressFromMapPosition(currentMapPosition.lat, currentMapPosition.lng, 'location');
+                }
+                toggleLocationMap();
+                showNotification('✅ Lokasi dari peta dikonfirmasi!', 'success');
+            } else {
+                showNotification('Pilih lokasi di peta terlebih dahulu', 'error');
+            }
+        }
+        
+        // Post location functions (FREE GPS)
+        async function getPostLocationWithGoogleMaps() {
             const locationInput = document.getElementById('postLocation');
             const button = event.target;
             
-            // Show loading state
             button.innerHTML = '⏳ Mengambil...';
             button.disabled = true;
             
@@ -1740,14 +1407,16 @@
                 const lon = position.coords.longitude;
                 const accuracy = position.coords.accuracy;
                 
-                let address = await getAddressFromMultipleSources(lat, lon);
+                const address = await getAddressFromFreeService(lat, lon);
                 
                 if (address) {
                     locationInput.value = address;
-                    showNotification(`Lokasi berhasil diambil dengan akurasi ${Math.round(accuracy)} meter!`, 'success');
+                    showNotification(`📍 Lokasi berhasil diambil! Akurasi ${Math.round(accuracy)}m`, 'success');
+                    postMapPosition = { lat, lng: lon, accuracy };
                 } else {
                     locationInput.value = `Koordinat: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
                     showNotification('Lokasi diambil dalam bentuk koordinat GPS', 'info');
+                    postMapPosition = { lat, lng: lon, accuracy };
                 }
                 
             } catch (error) {
@@ -1755,10 +1424,97 @@
                 showNotification('GPS gagal. Silakan input lokasi manual.', 'info');
             }
             
-            // Reset button
             button.innerHTML = '📍 Ambil Lokasi';
             button.disabled = false;
         }
+        
+        function togglePostLocationMap() {
+            const mapContainer = document.getElementById('postLocationMapContainer');
+            const button = event.target;
+            
+            if (mapContainer.classList.contains('hidden')) {
+                mapContainer.classList.remove('hidden');
+                button.textContent = '🔼 Sembunyikan Peta';
+                
+                if (!postLocationMap) {
+                    initializePostLocationMap();
+                }
+            } else {
+                mapContainer.classList.add('hidden');
+                button.textContent = '📍 Lihat Peta';
+            }
+        }
+        
+        function initializePostLocationMap() {
+            const mapElement = document.getElementById('postLocationMap');
+            const accuracyElement = document.getElementById('postMapAccuracy');
+            
+            const defaultPosition = [-6.2088, 106.8456];
+            const initialPosition = postMapPosition ? [postMapPosition.lat, postMapPosition.lng] : defaultPosition;
+            
+            // Create Leaflet map (FREE)
+            postLocationMap = L.map(mapElement).setView(initialPosition, postMapPosition ? 16 : 11);
+            
+            // Add OpenStreetMap tiles (FREE)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(postLocationMap);
+            
+            // Add marker with green color for posts
+            const greenIcon = L.divIcon({
+                html: `<div style="background: #10B981; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+            
+            postLocationMarker = L.marker(initialPosition, { 
+                draggable: true,
+                icon: greenIcon
+            }).addTo(postLocationMap);
+            
+            if (postMapPosition && postMapPosition.accuracy) {
+                accuracyElement.textContent = `Akurasi: ${Math.round(postMapPosition.accuracy)}m`;
+            } else {
+                accuracyElement.textContent = 'Peta Interaktif';
+            }
+            
+            postLocationMap.on('click', (event) => {
+                const lat = event.latlng.lat;
+                const lng = event.latlng.lng;
+                
+                postLocationMarker.setLatLng([lat, lng]);
+                postMapPosition = { lat, lng };
+                
+                updateAddressFromMapPosition(lat, lng, 'postLocation');
+            });
+            
+            postLocationMarker.on('dragend', (event) => {
+                const lat = event.target.getLatLng().lat;
+                const lng = event.target.getLatLng().lng;
+                
+                postMapPosition = { lat, lng };
+                
+                updateAddressFromMapPosition(lat, lng, 'postLocation');
+            });
+            
+            showNotification('🗺️ Peta postingan siap! Klik atau drag marker untuk memilih lokasi', 'success');
+        }
+        
+        function confirmPostMapLocation() {
+            if (postMapPosition) {
+                const locationInput = document.getElementById('postLocation');
+                if (!locationInput.value.trim()) {
+                    updateAddressFromMapPosition(postMapPosition.lat, postMapPosition.lng, 'postLocation');
+                }
+                togglePostLocationMap();
+                showNotification('✅ Lokasi postingan dari peta dikonfirmasi!', 'success');
+            } else {
+                showNotification('Pilih lokasi di peta terlebih dahulu', 'error');
+            }
+        }
+        
+
         
         // PROFESSIONAL CAMERA FUNCTIONS WITH FULL FUNCTIONALITY
         async function startCameraAdvanced() {
@@ -2839,5 +2595,5 @@
             if (feedListener) feedListener();
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975505ac751efceb',t:'MTc1NjIyOTA2MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97554ec7928cff7e',t:'MTc1NjIzMjA1NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
