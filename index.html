@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PPSU-Pisbar-App</title>
+    <title>PPSU-PISBAR-APP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -331,10 +331,29 @@
     <div id="mobileMenu" class="mobile-menu">
         <div class="px-6 py-4">
             <div class="flex items-center space-x-3 mb-8">
-                <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                    <span class="text-white font-bold text-lg">P</span>
+                <!-- PPSU Professional Logo for Mobile -->
+                <div class="w-12 h-12 bg-white/95 rounded-xl flex items-center justify-center shadow-lg border border-white/20 backdrop-blur-sm">
+                    <svg width="32" height="32" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Background circle -->
+                        <circle cx="50" cy="50" r="48" fill="#1E40AF" stroke="#3B82F6" stroke-width="2"/>
+                        
+                        <!-- PPSU Shield Design -->
+                        <path d="M50 15 L35 25 L35 45 C35 60 42 70 50 75 C58 70 65 60 65 45 L65 25 Z" fill="#FFFFFF" stroke="#1E40AF" stroke-width="1"/>
+                        
+                        <!-- Inner elements -->
+                        <circle cx="50" cy="35" r="6" fill="#1E40AF"/>
+                        <rect x="42" y="45" width="16" height="3" rx="1.5" fill="#1E40AF"/>
+                        <rect x="44" y="52" width="12" height="2" rx="1" fill="#1E40AF"/>
+                        <rect x="46" y="58" width="8" height="2" rx="1" fill="#1E40AF"/>
+                        
+                        <!-- Bottom text area -->
+                        <text x="50" y="88" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#FFFFFF">PPSU</text>
+                    </svg>
                 </div>
-                <h1 class="text-white text-lg font-bold">PPSU-Pisbar-App</h1>
+                <div class="flex flex-col">
+                    <h1 class="text-white text-lg font-bold leading-tight">PPSU-PISBAR-APP</h1>
+                    <span class="text-white/70 text-xs font-medium">kelurahan pisangan baru</span>
+                </div>
             </div>
             <nav class="space-y-2">
                 <button onclick="showPage('home'); toggleMobileMenu();" class="w-full text-left text-white hover:bg-white/10 px-4 py-3 rounded-lg transition-colors flex items-center space-x-3">
@@ -367,10 +386,29 @@
         <div class="container mx-auto px-4 py-3">
             <div class="flex justify-between items-center">
                 <div class="flex items-center space-x-3">
-                    <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                        <span class="text-white font-bold text-sm">P</span>
+                    <!-- PPSU Professional Logo -->
+                    <div class="w-10 h-10 bg-white/95 rounded-xl flex items-center justify-center shadow-lg border border-white/20 backdrop-blur-sm">
+                        <svg width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Background circle -->
+                            <circle cx="50" cy="50" r="48" fill="#1E40AF" stroke="#3B82F6" stroke-width="2"/>
+                            
+                            <!-- PPSU Shield Design -->
+                            <path d="M50 15 L35 25 L35 45 C35 60 42 70 50 75 C58 70 65 60 65 45 L65 25 Z" fill="#FFFFFF" stroke="#1E40AF" stroke-width="1"/>
+                            
+                            <!-- Inner elements -->
+                            <circle cx="50" cy="35" r="6" fill="#1E40AF"/>
+                            <rect x="42" y="45" width="16" height="3" rx="1.5" fill="#1E40AF"/>
+                            <rect x="44" y="52" width="12" height="2" rx="1" fill="#1E40AF"/>
+                            <rect x="46" y="58" width="8" height="2" rx="1" fill="#1E40AF"/>
+                            
+                            <!-- Bottom text area -->
+                            <text x="50" y="88" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#FFFFFF">PPSU</text>
+                        </svg>
                     </div>
-                    <h1 class="text-white text-lg font-bold">PPSU-Pisbar-App</h1>
+                    <div class="flex flex-col">
+                        <h1 class="text-white text-lg font-bold leading-tight">PPSU-Pisbar-App</h1>
+                        <span class="text-white/70 text-xs font-medium">Petugas Penanganan Sarana Umum</span>
+                    </div>
                 </div>
                 
                 <!-- Hamburger Menu -->
@@ -387,8 +425,13 @@
     <div id="homePage" class="page fade-in">
         <div class="container mx-auto px-4 py-8">
             <div class="text-center mb-8">
-                <h2 class="text-2xl md:text-3xl font-bold text-white mb-3">Selamat Datang di PPSU-Pisbar-App</h2>
-                <p class="text-white/80 text-sm md:text-base">Sistem Pelaporan Kerja Digital untuk Tim PPSU</p>
+                <h2 class="text-lg md:text-xl font-bold text-white mb-3 leading-snug" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; letter-spacing: 0.3px; text-shadow: 0 1px 3px rgba(0,0,0,0.4);">
+                    <span class="font-semibold tracking-normal">Selamat Datang di</span><br>
+                    <span class="bg-gradient-to-r from-purple-300 via-pink-300 to-blue-300 bg-clip-text text-transparent font-black text-xl md:text-2xl tracking-tight">
+                        PPSU-Pisbar-App
+                    </span>
+                </h2>
+                <p class="text-white/80 text-sm md:text-base font-medium tracking-wide">Sistem Pelaporan Kerja Digital untuk Tim PPSU</p>
             </div>
             
             <div class="grid md:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto">
@@ -2226,7 +2269,12 @@
                     <!-- Post Photo -->
                     ${post.photo ? `
                         <div class="px-4 pb-3">
-                            <img src="${post.photo}" class="w-full rounded-xl cursor-pointer hover:opacity-95 transition-opacity shadow-md" onclick="viewPhoto('${post.photo}')">
+                            <div class="relative inline-block">
+                                <img src="${post.photo}" class="w-48 h-32 object-cover rounded-xl cursor-pointer hover:opacity-95 hover:scale-105 transition-all duration-300 shadow-lg border-2 border-white/20" onclick="viewPhoto('${post.photo}')" title="Klik untuk memperbesar foto">
+                                <div class="absolute top-2 right-2 bg-black/60 text-white px-2 py-1 rounded-lg text-xs font-medium">
+                                    🔍 Klik untuk zoom
+                                </div>
+                            </div>
                         </div>
                     ` : ''}
                     
@@ -2741,23 +2789,89 @@
         }
         
         function viewPhoto(photoSrc) {
-            // Create modal to view photo
+            // Create modal to view photo with enhanced zoom functionality
             const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4';
-            modal.onclick = () => modal.remove();
+            modal.className = 'fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 backdrop-blur-sm';
+            modal.style.animation = 'fadeIn 0.3s ease-out';
             
             modal.innerHTML = `
-                <div class="max-w-4xl max-h-full">
-                    <img src="${photoSrc}" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl">
-                    <div class="text-center mt-4">
-                        <button onclick="this.parentElement.parentElement.remove()" class="bg-white/20 text-white px-4 py-2 rounded-lg hover:bg-white/30 transition-colors">
-                            Tutup
+                <div class="relative max-w-6xl max-h-full flex flex-col items-center">
+                    <!-- Close button -->
+                    <button onclick="this.parentElement.parentElement.remove()" class="absolute -top-12 right-0 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full transition-all duration-300 z-10 backdrop-blur-md border border-white/20">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                    
+                    <!-- Photo container with zoom -->
+                    <div class="relative overflow-hidden rounded-2xl shadow-2xl border-4 border-white/20 bg-white/5 backdrop-blur-md">
+                        <img src="${photoSrc}" class="max-w-full max-h-[80vh] object-contain transition-transform duration-300 hover:scale-110 cursor-zoom-in" 
+                             onclick="event.stopPropagation(); this.classList.toggle('scale-150'); this.classList.toggle('cursor-zoom-out'); this.classList.toggle('cursor-zoom-in');"
+                             title="Klik foto untuk zoom lebih besar">
+                        
+                        <!-- Photo info overlay -->
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                            <div class="text-white text-sm font-medium flex items-center justify-between">
+                                <span class="flex items-center">
+                                    📷 Foto Dokumentasi PPSU
+                                </span>
+                                <span class="text-white/70 text-xs">
+                                    💡 Klik foto untuk zoom
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action buttons -->
+                    <div class="flex items-center space-x-3 mt-6">
+                        <button onclick="downloadPhoto('${photoSrc}')" class="bg-blue-500/80 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 backdrop-blur-md border border-blue-400/30 flex items-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <span>Download</span>
+                        </button>
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" class="bg-gray-500/80 hover:bg-gray-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 backdrop-blur-md border border-gray-400/30 flex items-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            <span>Tutup</span>
                         </button>
                     </div>
                 </div>
             `;
             
+            // Close modal when clicking outside the photo
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+            
+            // Close modal with Escape key
+            const handleEscape = (e) => {
+                if (e.key === 'Escape') {
+                    modal.remove();
+                    document.removeEventListener('keydown', handleEscape);
+                }
+            };
+            document.addEventListener('keydown', handleEscape);
+            
             document.body.appendChild(modal);
+        }
+        
+        function downloadPhoto(photoSrc) {
+            try {
+                const link = document.createElement('a');
+                link.href = photoSrc;
+                link.download = `PPSU_Foto_${new Date().toISOString().split('T')[0]}_${Date.now()}.jpg`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showNotification('📷 Foto berhasil didownload!', 'success');
+            } catch (error) {
+                console.error('Download error:', error);
+                showNotification('Gagal mendownload foto', 'error');
+            }
         }
         
         function showNotification(message, type = 'success') {
@@ -2795,5 +2909,5 @@
             if (feedListener) feedListener();
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97556befb04f5f2f',t:'MTc1NjIzMzI0OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975be98ac1f2f8f2',t:'MTc1NjMwMTMwOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
