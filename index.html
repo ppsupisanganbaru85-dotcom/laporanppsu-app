@@ -396,101 +396,97 @@
 
     <!-- Navigation -->
     <nav class="bg-white/10 backdrop-blur-md border-b border-white/20 sticky top-0 z-50" id="mainNav">
-        <div class="container mx-auto px-4 py-3">
-            <div class="flex justify-between items-center">
-                <!-- Logo and Status -->
-                <div class="flex items-center space-x-3">
-                    <!-- LOGO PPSU -->
-                    <img src="logoppsu.jpeg" alt="Logo PPSU" class="w-10 h-10 rounded-xl shadow-lg border border-white/20 object-cover bg-white/95" style="min-width:40px;">
-                    <h1 class="text-white text-lg font-semibold tracking-tight ml-2">PPSU PISANGAN BARU</h1>
-                    <div id="firebaseStatus" class="hidden sm:block text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                        🔄 Connecting...
-                    </div>
-                </div>
-                
-                <!-- Desktop Navigation Menu -->
-                <div class="hidden md:flex items-center space-x-1">
-                    <button onclick="navigateToPage('home')" class="nav-desktop-btn px-4 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 text-sm font-medium flex items-center space-x-2">
-                        <span>🏠</span>
-                        <span>Beranda</span>
-                    </button>
-                    <button onclick="navigateToPage('reports')" class="nav-desktop-btn px-4 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 text-sm font-medium flex items-center space-x-2">
-                        <span>📝</span>
-                        <span>Laporan</span>
-                    </button>
-                    <button onclick="navigateToPage('feed')" class="nav-desktop-btn px-4 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 text-sm font-medium flex items-center space-x-2">
-                        <span>💬</span>
-                        <span>Feed</span>
-                    </button>
-                    <button onclick="navigateToPage('admin')" class="nav-desktop-btn px-4 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 text-sm font-medium flex items-center space-x-2">
-                        <span>⚙️</span>
-                        <span>Admin</span>
-                    </button>
-                </div>
-                
-                <!-- Mobile Hamburger Menu -->
-                <div class="hamburger md:hidden" id="hamburgerMenu" onclick="toggleMobileMenu()">
-                    <span></span>
-                    <span></span>
-                    <span></span>
+    <div class="max-w-screen-xl w-full mx-auto px-6 py-4">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+            <!-- Logo and Status -->
+            <div class="flex items-center space-x-3 w-full md:w-auto">
+                <img src="logoppsu.jpeg" alt="Logo PPSU"
+                     class="w-12 h-12 md:w-14 md:h-14 rounded-xl shadow-lg border border-white/20 object-cover bg-white/95"
+                     style="min-width:48px;">
+                <h1 class="text-white text-xl md:text-2xl font-semibold tracking-tight ml-2">PPSU PISANGAN BARU</h1>
+                <div id="firebaseStatus"
+                     class="hidden sm:block text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 ml-2">
+                    🔄 Connecting...
                 </div>
             </div>
+            <!-- Desktop Navigation Menu -->
+            <div class="hidden md:flex items-center space-x-2 mt-3 md:mt-0">
+                <button onclick="navigateToPage('home')" class="nav-desktop-btn px-5 py-3 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 text-base font-medium flex items-center space-x-2">
+                    <span>🏠</span>
+                    <span>Beranda</span>
+                </button>
+                <button onclick="navigateToPage('reports')" class="nav-desktop-btn px-5 py-3 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 text-base font-medium flex items-center space-x-2">
+                    <span>📝</span>
+                    <span>Laporan</span>
+                </button>
+                <button onclick="navigateToPage('feed')" class="nav-desktop-btn px-5 py-3 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 text-base font-medium flex items-center space-x-2">
+                    <span>💬</span>
+                    <span>Feed</span>
+                </button>
+                <button onclick="navigateToPage('admin')" class="nav-desktop-btn px-5 py-3 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 text-base font-medium flex items-center space-x-2">
+                    <span>⚙️</span>
+                    <span>Admin</span>
+                </button>
+            </div>
+            <!-- Mobile Hamburger Menu -->
+            <div class="hamburger md:hidden mt-3 md:mt-0" id="hamburgerMenu" onclick="toggleMobileMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
         </div>
-    </nav>
+    </div>
+</nav>
 
     <!-- Home Page -->
     <div id="homePage" class="page fade-in">
-        <div class="container mx-auto px-4 py-8">
-            <div class="text-center mb-8">
-                <h2 class="text-lg md:text-xl font-bold text-white mb-3 leading-snug">
+        <div class="max-w-screen-xl w-full mx-auto px-6 py-10">
+            <div class="text-center mb-10">
+                <h2 class="text-xl md:text-2xl font-bold text-white mb-4 leading-snug">
                     <span class="font-semibold tracking-normal">Selamat Memperingati Maulid Nabi Muhammad SAW</span><br>
-                    <span class="bg-gradient-to-r from-purple-300 via-pink-300 to-blue-300 bg-clip-text text-transparent font-black text-xl md:text-2xl tracking-tight">
+                    <span class="bg-gradient-to-r from-purple-300 via-pink-300 to-blue-300 bg-clip-text text-transparent font-black text-2xl md:text-3xl tracking-tight">
                         PPSU-PISBAR-App v.2.0
                     </span>
                 </h2>
             </div>
-            
-            <div class="grid md:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto">
-                <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 md:p-6 card-hover border border-white/20">
+            <div class="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 md:p-8 card-hover border border-white/20">
                     <div class="text-center">
-                        <div class="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <span class="text-white text-lg md:text-xl">📝</span>
+                        <div class="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-white text-xl md:text-2xl">📝</span>
                         </div>
-                        <h3 class="text-white text-lg md:text-xl font-semibold mb-2">Input Laporan</h3>
-                        <p class="text-white/70 mb-3 text-sm">Buat laporan kerja harian dengan mudah</p>
-                        <button onclick="navigateToPage('reports')" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm">
+                        <h3 class="text-white text-xl md:text-2xl font-semibold mb-3">Input Laporan</h3>
+                        <p class="text-white/70 mb-4 text-base">Buat laporan kerja harian dengan mudah</p>
+                        <button onclick="navigateToPage('reports')" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-5 py-3 rounded-lg hover:shadow-lg transition-all text-base">
                             Mulai Laporan
                         </button>
                     </div>
                 </div>
-                
-                <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 md:p-6 card-hover border border-white/20">
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 md:p-8 card-hover border border-white/20">
                     <div class="text-center">
-                        <div class="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <span class="text-white text-lg md:text-xl">💬</span>
+                        <div class="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-white text-xl md:text-2xl">💬</span>
                         </div>
-                        <h3 class="text-white text-lg md:text-xl font-semibold mb-2">Feed Aktivitas</h3>
-                        <p class="text-white/70 mb-3 text-sm">Lihat dan komentari aktivitas tim</p>
-                        <button onclick="navigateToPage('feed')" class="bg-gradient-to-r from-green-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm">
+                        <h3 class="text-white text-xl md:text-2xl font-semibold mb-3">Feed Aktivitas</h3>
+                        <p class="text-white/70 mb-4 text-base">Lihat dan komentari aktivitas tim</p>
+                        <button onclick="navigateToPage('feed')" class="bg-gradient-to-r from-green-500 to-blue-500 text-white px-5 py-3 rounded-lg hover:shadow-lg transition-all text-base">
                             Lihat Feed
                         </button>
                     </div>
                 </div>
-                
-                <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 md:p-6 card-hover border border-white/20">
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 md:p-8 card-hover border border-white/20">
                     <div class="text-center">
-                        <div class="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <span class="text-white text-lg md:text-xl">⚙️</span>
+                        <div class="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-white text-xl md:text-2xl">⚙️</span>
                         </div>
-                        <h3 class="text-white text-lg md:text-xl font-semibold mb-2">Panel Admin</h3>
-                        <p class="text-white/70 mb-3 text-sm">Kelola petugas dan rekap laporan</p>
-                        <button onclick="navigateToPage('admin')" class="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all text-sm">
+                        <h3 class="text-white text-xl md:text-2xl font-semibold mb-3">Panel Admin</h3>
+                        <p class="text-white/70 mb-4 text-base">Kelola petugas dan rekap laporan</p>
+                        <button onclick="navigateToPage('admin')" class="bg-gradient-to-r from-orange-500 to-red-500 text-white px-5 py-3 rounded-lg hover:shadow-lg transition-all text-base">
                             Masuk Admin
                         </button>
                     </div>
                 </div>
             </div>
-            
             <!-- Spreadsheet Links Section -->
             <div class="mt-12 max-w-6xl mx-auto">
                 <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
@@ -2403,7 +2399,7 @@
                         <!-- Post Header -->
                         <div class="p-4 pb-3">
                             <div class="flex items-center space-x-3">
-                                <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
                                     <span class="text-white font-semibold text-sm">${author.charAt(0).toUpperCase()}</span>
                                 </div>
                                 <div class="flex-1 min-w-0">
@@ -2486,7 +2482,7 @@
                                         <span class="text-gray-600 font-medium text-xs">👤</span>
                                     </div>
                                     <div class="flex-1 flex space-x-2">
-                                        <input type="text" id="comment-input-${post.id}" placeholder="Tulis komentar..." class="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white border border-transparent focus:border-blue-500">
+                                        <input type="text" id="comment-input-${post.id}" placeholder="Tulis komentar..." class="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                         <button onclick="addComment('${post.id}')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full transition-colors text-sm font-medium">
                                             Kirim
                                         </button>
