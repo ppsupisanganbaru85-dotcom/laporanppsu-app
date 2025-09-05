@@ -354,6 +354,25 @@
             position: relative;
             z-index: 10;
         }
+        
+        @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+        @keyframes marquee {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(0); }
+        }
+        .marquee-text {
+            display: inline-block;
+            min-width: 100%;
+            animation: marquee 15s linear infinite;
+            font-family: 'Pacifico', cursive;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+        }
+        @media (max-width: 640px) {
+            .marquee-text {
+                font-size: 1rem;
+            }
+        }
     </style>
 </head>
 <body class="gradient-bg min-h-screen">
@@ -438,12 +457,40 @@
         </div>
     </nav>
 
+    <!-- Tambahkan di bawah tag </nav> (setelah navigation bar) -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+        @keyframes marquee {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(0); }
+        }
+        .marquee-text {
+            display: inline-block;
+            min-width: 100%;
+            animation: marquee 15s linear infinite;
+            font-family: 'Pacifico', cursive;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+        }
+        @media (max-width: 640px) {
+            .marquee-text {
+                font-size: 1rem;
+            }
+        }
+    </style>
+
+    <div class="w-full overflow-hidden bg-gradient-to-r from-purple-500/30 via-pink-500/30 to-blue-500/30 py-2 mb-2">
+        <div class="marquee-text text-white font-bold whitespace-nowrap">
+            Selamat Memperingati Maulid Nabi Muhammad SAW &nbsp; • &nbsp; Selamat Memperingati Maulid Nabi Muhammad SAW &nbsp; • &nbsp; Selamat Memperingati Maulid Nabi Muhammad SAW &nbsp; • &nbsp;
+        </div>
+    </div>
+
     <!-- Home Page -->
     <div id="homePage" class="page fade-in">
         <div class="max-w-screen-xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-10">
             <div class="text-center mb-10">
                 <h2 class="text-lg sm:text-xl md:text-2xl font-bold text-white mb-4 leading-snug">
-                    <span class="font-semibold tracking-normal">Selamat Memperingati Maulid Nabi Muhammad SAW</span><br>
+                    <span class="font-semibold tracking-normal">Selamat Datang Di</span><br>
                     <span class="bg-gradient-to-r from-purple-300 via-pink-300 to-blue-300 bg-clip-text text-transparent font-black text-xl sm:text-2xl md:text-3xl tracking-tight">
                         PPSU-PISBAR-App v.2.0
                     </span>
@@ -1459,7 +1506,7 @@
                 showNotification(`${errorMessage}. Input manual diaktifkan.`, 'info');
             }
             
-            button.innerHTML = '📍 Ambil Lokasi';
+            button.innerHTML
             button.disabled = false;
             
             setTimeout(() => {
