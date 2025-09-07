@@ -415,19 +415,19 @@
 
     <!-- Navigation -->
     <nav class="bg-white/10 backdrop-blur-md border-b border-white/20 sticky top-0 z-50" id="mainNav">
-        <div class="container mx-auto px-4 py-3">
-            <div class="flex justify-between items-center">
+        <div class="max-w-screen-xl w-full mx-auto px-4 sm:px-6 py-4">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                 <!-- Logo and Status -->
                 <div class="flex items-center space-x-3 w-full md:w-auto">
                     <img src="logoppsu.jpeg" alt="Logo PPSU"
                          class="w-12 h-12 md:w-14 md:h-14 rounded-xl shadow-lg border border-white/20 object-cover bg-white/95"
                          style="min-width:48px;">
-                    <h1 class="text-white text-xl md:text-2xl font-semibold tracking-tight ml-2">PPSU PISBAR</h1>
-                    <div id="firebaseStatus" class="hidden sm:block text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                    <h1 class="text-white text-xl md:text-2xl font-semibold tracking-tight ml-2">PPSU PISANGAN BARU</h1>
+                    <div id="firebaseStatus"
+                         class="hidden sm:block text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 ml-2">
                         🔄 Connecting...
                     </div>
                 </div>
-                
                 <!-- Desktop Navigation Menu -->
                 <div class="hidden md:flex items-center space-x-2 mt-3 md:mt-0">
                     <button onclick="navigateToPage('home')" class="nav-desktop-btn px-5 py-3 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 text-base font-medium flex items-center space-x-2">
@@ -447,9 +447,8 @@
                         <span>Admin</span>
                     </button>
                 </div>
-                
                 <!-- Mobile Hamburger Menu -->
-                <div class="hamburger md:hidden" id="hamburgerMenu" onclick="toggleMobileMenu()">
+                <div class="hamburger md:hidden mt-3 md:mt-0" id="hamburgerMenu" onclick="toggleMobileMenu()">
                     <span></span>
                     <span></span>
                     <span></span>
@@ -1222,7 +1221,7 @@
                     console.log('🔥 Firebase SDK loaded successfully!');
                     testFirebaseConnection();
                     initializeFirebaseListeners();
-                    showNotification('🔥 Firebase terhubung! Data tersimpan permanen di cloud.', 'success');
+                    showNotification('🔥 Firebase terhubung! Data tersimpan.', 'success');
                 } else {
                     console.log('⚠️ Firebase not ready, using fallback...');
                     initializeFallbackMode();
@@ -1350,10 +1349,10 @@
             
             if (connected) {
                 statusIndicator.className = 'text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-300 border border-green-500/30';
-                statusIndicator.innerHTML = '🟢 Firebase Connected';
+                statusIndicator.innerHTML = '🟢 Connected';
             } else {
                 statusIndicator.className = 'text-xs px-2 py-1 rounded-full bg-red-500/20 text-red-300 border border-red-500/30';
-                statusIndicator.innerHTML = '🔴 Firebase Disconnected';
+                statusIndicator.innerHTML = '🔴 Disconnected';
             }
         }
         
@@ -1411,7 +1410,7 @@
         
         // OPTIMIZED LISTENERS - Hemat Reads hingga 95%!
         function initializeOptimizedListeners() {
-            console.log('💰 Initializing READ-OPTIMIZED listeners...');
+            console.log(' Initializing READ-OPTIMIZED listeners...');
             
             // 1. DAILY SUMMARY LISTENER - Hanya 1 dokumen per hari!
             const today = new Date().toISOString().split('T')[0];
@@ -1625,7 +1624,7 @@
             // Show optimization info
             const readsSaved = summary.readsSaved || 0;
             if (readsSaved > 0) {
-                showNotification(`💰 Hemat ${readsSaved} Firebase reads hari ini!`, 'success');
+                showNotification(` Hemat ${readsSaved} Firebase reads hari ini!`, 'success');
             }
         }
         
@@ -1768,10 +1767,10 @@
             freeStorageMode = !freeStorageMode;
             
             if (freeStorageMode) {
-                showNotification('🆓 Mode GRATIS aktif - Storage unlimited dengan auto cleanup!', 'success');
+                showNotification('🆓 Mode aktif - Storage unlimited dengan auto cleanup!', 'success');
                 startStorageMonitoring();
             } else {
-                showNotification('⚠️ Mode gratis dinonaktifkan - Hati-hati dengan storage limit!', 'info');
+                showNotification('⚠️ Mode dinonaktifkan - Hati-hati dengan storage limit!', 'info');
                 stopStorageMonitoring();
             }
             
@@ -1892,7 +1891,7 @@
             
             // Show warnings
             if (percentage > 90) {
-                showNotification('🚨 Storage hampir penuh! Auto cleanup akan dimulai...', 'error');
+                showNotification('🚨 ', 'error');
             } else if (percentage > 80) {
                 showNotification('⚠️ Storage mencapai 80%. Siap-siap auto cleanup...', 'info');
             }
@@ -4750,5 +4749,3 @@
     </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97b5c9488571f93e',t:'MTc1NzI0MzcwNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
-
-
