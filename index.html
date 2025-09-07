@@ -1221,7 +1221,7 @@
                     console.log('🔥 Firebase SDK loaded successfully!');
                     testFirebaseConnection();
                     initializeFirebaseListeners();
-                    showNotification('🔥 Firebase terhubung! Data tersimpan.', 'success');
+                    showNotification('🔥 Firebase terhubung!', 'success');
                 } else {
                     console.log('⚠️ Firebase not ready, using fallback...');
                     initializeFallbackMode();
@@ -1349,7 +1349,7 @@
             
             if (connected) {
                 statusIndicator.className = 'text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-300 border border-green-500/30';
-                statusIndicator.innerHTML = '🟢 Connected';
+                statusIndicator.innerHTML = '🟢 Aktif';
             } else {
                 statusIndicator.className = 'text-xs px-2 py-1 rounded-full bg-red-500/20 text-red-300 border border-red-500/30';
                 statusIndicator.innerHTML = '🔴 Disconnected';
@@ -1893,7 +1893,7 @@
             if (percentage > 90) {
                 showNotification('🚨 ', 'error');
             } else if (percentage > 80) {
-                showNotification('⚠️ Storage mencapai 80%. Siap-siap auto cleanup...', 'info');
+                showNotification('⚠️ ', 'info');
             }
         }
         
@@ -1989,7 +1989,7 @@
                 localStorage.setItem('ppsu_feed', JSON.stringify(recentLocalFeed));
                 
                 console.log(`✅ AUTO CLEANUP completed: ${cleanedItems} items, ${cleanedSize}KB freed`);
-                showNotification(`🧹 Auto cleanup selesai! ${cleanedItems} item lama dihapus, ${cleanedSize}KB storage dibebaskan. Firebase tetap GRATIS!`, 'success');
+                showNotification(`🧹');
                 
                 // Recalculate storage after cleanup
                 setTimeout(() => {
@@ -4749,3 +4749,4 @@
     </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97b5c9488571f93e',t:'MTc1NzI0MzcwNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
+
