@@ -1349,10 +1349,10 @@
             
             if (connected) {
                 statusIndicator.className = 'text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-300 border border-green-500/30';
-                statusIndicator.innerHTML = '🟢 Connected';
+                statusIndicator.innerHTML = '🟢 Aktif';
             } else {
                 statusIndicator.className = 'text-xs px-2 py-1 rounded-full bg-red-500/20 text-red-300 border border-red-500/30';
-                statusIndicator.innerHTML = '🔴 Disconnected';
+                statusIndicator.innerHTML = '🔴 NonAktif';
             }
         }
         
@@ -1891,7 +1891,7 @@
             
             // Show warnings
             if (percentage > 90) {
-                showNotification('🚨 ', 'error');
+                showNotification(' ', 'error');
             } else if (percentage > 80) {
                 showNotification('⚠️ Storage mencapai 80%. Siap-siap auto cleanup...', 'info');
             }
@@ -1974,22 +1974,33 @@
                 }
                 
                 // 4. Clean localStorage backup
-                const localReports = JSON.parse(localStorage.getItem('ppsu_reports') || '[]');
+                  const localReports = JSON.parse(localStorage.getItem('ppsu_reports') || '[]');
                 const recentLocalReports = localReports.filter(report => {
                     const reportDate = new Date(report.date);
                     return reportDate >= thirtyDaysAgo;
                 });
                 localStorage.setItem('ppsu_reports', JSON.stringify(recentLocalReports));
-                
+
                 const localFeed = JSON.parse(localStorage.getItem('ppsu_feed') || '[]');
                 const recentLocalFeed = localFeed.filter(post => {
                     const postDate = new Date(post.date);
                     return postDate >= thirtyDaysAgo;
                 });
                 localStorage.setItem('ppsu_feed', JSON.stringify(recentLocalFeed));
-                
+
                 console.log(`✅ AUTO CLEANUP completed: ${cleanedItems} items, ${cleanedSize}KB freed`);
-                showNotification(` Auto cleanup selesai! ${cleanedItems} item lama dihapus, ${cleanedSize}KB storage dibebaskan. `, 'success');
+                // Notifikasi hanya bila melewati cooldown
+                const now = Date.now();
+                if (cleanedItems > 0) {
+                    if (now - lastAutoCleanupNotifyAt > AUTO_CLEANUP_NOTIFY_COOLDOWN_MS) {
+                        showNotification(`🧹 Auto cleanup selesai: ${cleanedItems} item dihapus, ${cleanedSize}KB dibebaskan.`, 'success');
+                        lastAutoCleanupNotifyAt = now;
+                    } else {
+                        console.log('Auto cleanup occurred but notification suppressed by cooldown.');
+                    }
+                } else {
+                    console.log('Auto cleanup dijalankan: tidak ada item untuk dihapus.');
+                }
                 
                 // Recalculate storage after cleanup
                 setTimeout(() => {
@@ -4364,9 +4375,9 @@
             const icons = {
                 'Tim Penyapuan': '🧹',
                 'Tim Saluran 1': '🚰',
-                'Tim Saluran 2': '💧',
-                'Tim Saluran 3': '🌊',
-                'Tim Saluran 4': '💦',
+                'Tim Saluran 2': '🚰',
+                'Tim Saluran 3': '🚰',
+                'Tim Saluran 4': '🚰',
                 'Tim Taman': '🌳',
                 'Tim Penataan': '🏗️',
                 'Tim TRC': '🚛',
