@@ -400,13 +400,10 @@
                     <span>💬</span>
                     <span>Feed</span>
                 </button>
-                 <button onclick="showPage('announcements'); toggleMobileMenu()" class="w-full text-left text-white px-4 py-3 rounded-lg btn-blue-3d">
-                    📢 Info
-                </button>
                 <button onclick="navigateToPage('admin')" class="nav-btn w-full text-left text-white hover:bg-white/10 px-4 py-3 rounded-lg transition-colors flex items-center space-x-3">
                     <span>⚙️</span>
                     <span>Admin</span>
-                </button>
+                </b>
             </nav>
         </div>
     </div>
@@ -445,10 +442,6 @@
                         <span>💬</span>
                         <span>Feed</span>
                     </button>
-                    
-                     <button onclick="showPage('announcements')" class="nav-btn text-white px-3 py-2 rounded-lg btn-blue-3d">
-                    📢 Info
-                </button>
                 <button onclick="showPage('admin')" class="nav-btn text-white px-3 py-2 rounded-lg btn-blue-3d">
                     </button>
                     <button onclick="navigateToPage('admin')" class="nav-desktop-btn px-5 py-3 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 text-base font-medium flex items-center space-x-2">
@@ -531,13 +524,6 @@
                         </button>
                     </div>
                 </div>
-                
-                 <div class="card-hover glass-effect rounded-2xl p-6 cursor-pointer btn-blue-3d" onclick="showPage('announcements')">
-                        <div class="text-4xl mb-4">📢</div>
-                        <h3 class="text-white font-semibold text-lg mb-2">Pengumuman</h3>
-                        <p class="text-white/80 text-sm">Info dan pengumuman</p>
-                    </div>
-                
                 <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 md:p-6 card-hover border border-white/20">
                     <div class="text-center">
                         <div class="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -676,7 +662,6 @@
                                 <div class="mt-2 text-white/60 text-xs space-y-1">
                                     <p>💡 <strong>Tips Foto Optimal:</strong> Pastikan pencahayaan cukup</p>
                                     <p>📱 Gunakan kamera belakang untuk dokumentasi lapangan</p>
-                                    <p>🔄 Klik tombol biru di preview untuk ganti kamera</p>
                                     <p>🔥 <strong>info:</strong> Tidak bisa upload file gunakan kamera)</p>
                                 </div>
                             </div>
@@ -766,20 +751,6 @@
             </div>
         </div>
     </div>
-    
-    <div id="announcements-page" class="page px-4 pb-20 min-h-screen hidden" style="padding-top: 120px;">
-        <div class="max-w-4xl mx-auto py-8">
-            <!-- Header pengumuman -->
-            <div class="glass-effect rounded-3xl p-8 mb-8">
-                <h2 class="text-3xl font-bold text-white text-center">📢 Pengumuman</h2>
-                <p class="text-white/80 text-center mt-2">Informasi dan pengumuman penting</p>
-            </div>
-            
-            <!-- Container untuk pengumuman -->
-            <div id="announcements-container" class="space-y-6 mb-8">
-                <!-- Announcements akan dimuat di sini oleh JavaScript -->
-            </div>
-        </div>
     
     <!-- Admin Login -->
     <div id="adminLoginPage" class="page hidden">
@@ -4835,246 +4806,6 @@
                 spreadsheetListener();
             }
         });
-        
-         // ANNOUNCEMENTS FUNCTIONS: Fungsi pengumuman
-        // ========================================= 
-        
-        // Load pengumuman
-        async function loadAnnouncements() {
-            const container = document.getElementById('announcements-container');
-            
-            // Refresh data jika cache expired
-            if (isFirebaseConnected && Date.now() - dataCache.lastFetch > dataCache.cacheExpiry) {
-                await loadInitialData();
-            }
-            
-            const announcements = dataCache.announcements;
-
-            if (announcements.length === 0) {
-                container.innerHTML = `
-                    <div class="glass-effect rounded-2xl p-8 text-center">
-                        <div class="text-6xl mb-4">📢</div>
-                        <h3 class="text-white text-xl font-semibold mb-2">Belum Ada Pengumuman</h3>
-                        <p class="text-white/80">Pengumuman akan muncul di sini</p>
-                    </div>
-                `;
-                return;
-            }
-
-            // Generate HTML untuk setiap pengumuman
-            container.innerHTML = announcements.map(announcement => `
-                <div class="post-card">
-                    <div class="p-6">
-                        <!-- Header pengumuman -->
-                        <div class="flex items-center mb-4">
-                            <div class="w-12 h-12 bg-gradient-to-r from-red-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold">
-                                📢
-                            </div>
-                            <div class="ml-3">
-                                <h3 class="font-semibold text-gray-800">Admin PPSU PISBAR</h3>
-                                <p class="text-gray-500 text-sm">${formatDate(announcement.timestamp)}</p>
-                            </div>
-                        </div>
-                        
-                        <!-- Konten pengumuman -->
-                        <h2 class="text-xl font-bold text-gray-800 mb-3">${announcement.title}</h2>
-                        <p class="text-gray-700 whitespace-pre-line">${announcement.content}</p>
-                    </div>
-                </div>
-            `).join('');
-        }
-        
-           // Fetch announcements
-                const announcementsSnapshot = await db.collection('announcements')
-                    .orderBy('timestamp', 'desc')
-                    .limit(20)
-                    .get();
-                
-                dataCache.announcements = [];
-                announcementsSnapshot.forEach(doc => {
-                    dataCache.announcements.push({ id: doc.id, ...doc.data() });
-                });
-                
-                // Announcement form
-            document.getElementById('announcement-form').addEventListener('submit', handleAnnouncementSubmit);
-         // ANALYTICS FUNCTIONS: Fungsi analisis
-        // ========================================= 
-        
-        // Load analytics data
-        function loadAnalytics() {
-            const today = new Date().toDateString();
-            const todayReports = dataCache.reports.filter(r => 
-                new Date(r.timestamp).toDateString() === today
-            );
-
-            const activeOfficers = new Set(todayReports.map(r => r.activeOfficer));
-            const allOfficers = new Set(dataCache.reports.map(r => r.activeOfficer));
-            const missingReports = allOfficers.size - activeOfficers.size;
-
-            document.getElementById('today-reports').textContent = todayReports.length;
-            document.getElementById('active-officers').textContent = activeOfficers.size;
-            document.getElementById('missing-reports').textContent = Math.max(0, missingReports);
-
-            // Analisis harian
-            const analysisContainer = document.getElementById('daily-analysis');
-            const officersWhoReported = Array.from(activeOfficers);
-            const allOfficersList = Array.from(allOfficers);
-            const officersNotReported = allOfficersList.filter(officer => !activeOfficers.has(officer));
-
-            analysisContainer.innerHTML = `
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div>
-                        <h4 class="font-semibold mb-3 text-green-400">✅ Sudah Laporan Hari Ini (${officersWhoReported.length}):</h4>
-                        <ul class="space-y-2 max-h-40 overflow-y-auto">
-                            ${officersWhoReported.map(officer => `
-                                <li class="bg-green-600/20 px-3 py-2 rounded-lg">${officer}</li>
-                            `).join('') || '<li class="text-gray-400">Belum ada yang laporan</li>'}
-                        </ul>
-                    </div>
-                    <div>
-                        <h4 class="font-semibold mb-3 text-red-400">⚠️ Belum Laporan Hari Ini (${officersNotReported.length}):</h4>
-                        <ul class="space-y-2 max-h-40 overflow-y-auto">
-                            ${officersNotReported.map(officer => `
-                                <li class="bg-red-600/20 px-3 py-2 rounded-lg">${officer}</li>
-                            `).join('') || '<li class="text-gray-400">Semua sudah laporan</li>'}
-                        </ul>
-                    </div>
-                </div>
-                <div class="mt-6 p-4 bg-blue-600/20 rounded-lg">
-                    <h4 class="font-semibold mb-2 text-blue-400">📊 Statistik Hari Ini:</h4>
-                    <p class="text-white/80">Batas harian: 45 laporan | Sisa kuota: ${Math.max(0, 45 - todayReports.length)} laporan</p>
-                    <p class="text-white/80">Tingkat partisipasi: ${allOfficers.size > 0 ? Math.round((activeOfficers.size / allOfficers.size) * 100) : 0}%</p>
-                </div>
-            `;
-        }
-
-        // ========================================= 
-        // ANNOUNCEMENT ADMIN FUNCTIONS: Fungsi admin pengumuman
-        // ========================================= 
-        
-        // Handle submit pengumuman
-        async function handleAnnouncementSubmit(e) {
-            e.preventDefault();
-
-            const title = document.getElementById('announcement-title').value;
-            const content = document.getElementById('announcement-content').value;
-
-            const announcement = {
-                id: Date.now().toString(),
-                title: title,
-                content: content,
-                timestamp: new Date().toISOString()
-            };
-
-            try {
-                if (isFirebaseConnected) {
-                    // Simpan ke Firebase
-                    await db.collection('announcements').add(announcement);
-                    console.log('✅ Announcement saved to Firebase');
-                }
-
-                // Update cache lokal
-                dataCache.announcements.unshift(announcement);
-                
-                // Simpan ke localStorage sebagai backup
-                localStorage.setItem('ppsu-announcements', JSON.stringify(dataCache.announcements));
-
-                document.getElementById('announcement-form').reset();
-                loadAnnouncementsAdmin();
-                alert('✅ Pengumuman berhasil diposting dan disinkronkan!');
-            } catch (error) {
-                console.error('Failed to save announcement:', error);
-                alert('⚠️ Pengumuman disimpan lokal, akan disinkronkan saat koneksi stabil');
-            }
-        }
-
-        // Load announcements admin
-        function loadAnnouncementsAdmin() {
-            const container = document.getElementById('admin-announcements-list');
-            const announcements = dataCache.announcements;
-
-            container.innerHTML = announcements.map(announcement => `
-                <div class="bg-white/10 rounded-xl p-4 mb-4">
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1">
-                            <h4 class="text-white font-semibold mb-2">${announcement.title}</h4>
-                            <p class="text-white/80 mb-2">${announcement.content}</p>
-                            <p class="text-white/60 text-sm">${formatDate(announcement.timestamp)}</p>
-                        </div>
-                        <button onclick="deleteAnnouncement('${announcement.id}')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm ml-4 btn-3d whitespace-nowrap">
-                            🗑️ Hapus
-                        </button>
-                    </div>
-                </div>
-            `).join('') || '<p class="text-white/80">Belum ada pengumuman</p>';
-        }
-
-        // Delete pengumuman
-        async function deleteAnnouncement(announcementId) {
-            if (confirm('Yakin ingin menghapus pengumuman ini?')) {
-                try {
-                    if (isFirebaseConnected) {
-                        // Cari dan hapus dari Firebase
-                        const announcementQuery = await db.collection('announcements')
-                            .where('id', '==', announcementId)
-                            .get();
-                        
-                        announcementQuery.forEach(async (doc) => {
-                            await doc.ref.delete();
-                        });
-                    }
-
-                    // Update cache lokal
-                    dataCache.announcements = dataCache.announcements.filter(a => a.id !== announcementId);
-                    
-                    // Update localStorage backup
-                    localStorage.setItem('ppsu-announcements', JSON.stringify(dataCache.announcements));
-                    
-                    loadAnnouncementsAdmin();
-                    alert('✅ Pengumuman berhasil dihapus dan disinkronkan!');
-                } catch (error) {
-                    console.error('Failed to delete announcement:', error);
-                    alert('⚠️ Pengumuman dihapus lokal, akan disinkronkan saat koneksi stabil');
-                }
-            }
-        }
-
-        // ========================================= 
-        // UTILITY FUNCTIONS: Fungsi utilitas
-        // ========================================= 
-        
-        // Format tanggal ke format Indonesia
-        function formatDate(timestamp) {
-            const date = new Date(timestamp);
-            const options = {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                timeZone: 'Asia/Jakarta'
-            };
-            return date.toLocaleDateString('id-ID', options);
-        }
-
-        // ========================================= 
-        // INITIALIZATION: Inisialisasi data kosong
-        // ========================================= 
-        
-        // Inisialisasi data kosong jika belum ada
-        if (!localStorage.getItem('ppsu-reports')) {
-            localStorage.setItem('ppsu-reports', JSON.stringify([]));
-        }
-        if (!localStorage.getItem('ppsu-announcements')) {
-            localStorage.setItem('ppsu-announcements', JSON.stringify([]));
-        }
-        if (!localStorage.getItem('ppsu-likes')) {
-            localStorage.setItem('ppsu-likes', JSON.stringify({}));
-        }
-        if (!localStorage.getItem('ppsu-comments')) {
-            localStorage.setItem('ppsu-comments', JSON.stringify({}));
-        }
-        
     </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97b5c9488571f93e',t:'MTc1NzI0MzcwNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
