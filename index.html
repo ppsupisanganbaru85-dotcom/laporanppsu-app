@@ -1737,17 +1737,17 @@
                 
                 // Update active teams and officers
                 const activeTeams = new Set(summaryData.activeTeams || []);
-                const activeOfficersSet = new Set(summaryData.activeOfficers || []);
+                const activeOfficers = new Set(summaryData.activeOfficers || []);
                 
                 if (team) activeTeams.add(team);
                 if (officers) {
                     officers.split(',').forEach(officer => {
-                        activeOfficersSet.add(officer.trim());
+                        activeOfficers.add(officer.trim());
                     });
                 }
                 
                 summaryData.activeTeams = Array.from(activeTeams);
-                summaryData.activeOfficers = Array.from(activeOfficersSet);
+                summaryData.activeOfficers = Array.from(activeOfficers);
                 
                 // Calculate reads saved
                 summaryData.readsSaved = Math.max(0, (summaryData.totalReports + summaryData.totalPosts) - 90);
@@ -2275,7 +2275,6 @@
             // Note: Replace 'YOUR_API_KEY' with actual Google Maps API key
             // For demo purposes, we'll use the free services as primary
             // To use Google Maps: Get API key from Google Cloud Console
-            
             const GOOGLE_MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY'; // Replace with your API key
             
             if (GOOGLE_MAPS_API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY') {
@@ -2756,7 +2755,8 @@
             // FIREBASE OPTIMIZATION: Minimal data structure to save storage
             const currentDate = new Date();
             const dateString = currentDate.toISOString().split('T')[0]; // YYYY-MM-DD format
-            
+            const timeString = currentDate.toLocaleTimeString('id-ID', { hour12: false }); // HH:mm:ss format
+
             const formData = {
                 // Core data only - optimized for Firebase
                 t: team,                    // team (shortened field name)
@@ -2768,11 +2768,11 @@
                 d: description,             // description
                 c: serverTimestamp(),       // createdAt
                 dt: dateString,             // date (short format)
+                jam: timeString,            // waktu jam laporan (HH:mm:ss)
                 st: 'ok',                   // status (shortened)
                 by: activeOfficers.split(',')[0].trim(), // submittedBy
-                // Add metadata for storage tracking
                 sz: Math.round((photo.length * 0.75) / 1024) // photo size in KB
-            };
+          };
             
             try {
                 console.log('📤 Submitting optimized report to Firebase...');
@@ -3119,7 +3119,7 @@
             const location = document.getElementById('postLocation').value.trim();
             
             if (!author || !team || !content) {
-                showNotification('❌ Mohon lengkapi nama petugas, tim, dan konten postingan!', 'error');
+                showNotification('❌ Mohon lengkapi nama penulis, tim, dan konten postingan!', 'error');
                 return;
             }
             
@@ -3308,6 +3308,7 @@
                                                     <div class="font-medium text-sm text-gray-900">${comment.author}</div>
                                                     <p class="text-sm text-gray-800">${comment.content}</p>
                                                 </div>
+                                                <div class="text-xs text-gray-500 mt-1 ml-3">${getTimeAgo(new Date(comment.date))}</div>
                                                 <div class="text-xs text-gray-500 mt-1 ml-3">${getTimeAgo(new Date(comment.date))}</div>
                                             </div>
                                         </div>
@@ -4018,7 +4019,7 @@
                         <td class="py-4 px-4 text-white/90 font-medium">
                             <div class="flex flex-col">
                                 <span>${date.toLocaleDateString('id-ID')}</span>
-                                <span class="text-xs text-white/50">${date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                                <span class="text-xs text-white/50">${report.jam || date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
                             </div>
                         </td>
                         <td class="py-4 px-4 text-white/90 font-semibold table-cell-truncate" title="${author}">${author}</td>
