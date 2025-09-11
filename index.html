@@ -619,14 +619,19 @@
                                 </div>
                                 
                                 <!-- Camera Controls Overlay -->
+                                <!-- ...existing code... -->
                                 <div id="cameraControls" class="camera-controls hidden">
-                                    <button type="button" onclick="capturePhotoAdvanced()" class="capture-btn bg-white hover:bg-gray-100 transition-all">
-                                        📸
-                                    </button>
-                                    <button type="button" onclick="switchCamera()" class="capture-btn bg-blue-500 hover:bg-blue-600 text-white transition-all">
-                                        🔄
-                                    </button>
-                                </div>
+                                <button type="button" onclick="capturePhotoAdvanced()" class="capture-btn bg-white hover:bg-gray-100 transition-all">
+                                📸
+                                </button>
+                                <button type="button" onclick="switchCamera()" class="capture-btn bg-blue-500 hover:bg-blue-600 text-white transition-all">
+                                🔄
+                                </button>
+                              <!-- Tambahkan tombol kamera depan -->
+                              <button type="button" onclick="openFrontCamera()" class="capture-btn bg-indigo-500 hover:bg-indigo-600 text-white transition-all" title="Kamera Depan">
+                              🤳
+                            </button>
+                            </div>
                                 
                                 <!-- Hidden Canvas for Processing -->
                                 <canvas id="photoCanvas" class="hidden"></canvas>
@@ -2578,6 +2583,85 @@
                 showNotification('Gagal beralih kamera', 'error');
             }
         }
+
+        // ...existing code...
+        async function switchToFacingMode(facingMode = 'user') {
+            const video = document.getElementById('cameraPreview');
+            const startBtn = document.getElementById('startCameraBtn');
+            const stopBtn = document.getElementById('stopCameraBtn');
+            const cameraControls = document.getElementById('cameraControls');
+            const statusDiv = document.getElementById('cameraStatus');
+            const statusText = document.getElementById('cameraStatusText');
+
+            try {
+                if (cameraStream) {
+                    cameraStream.getTracks().forEach(t => t.stop());
+                    cameraStream = null;
+                }
+
+                await enumerateCameras();
+
+                let constraints = {
+                    video: {
+                        width: { ideal: 800, max: 1024 },
+                        height: { ideal: 600, max: 768 },
+                        facingMode: facingMode
+                    }
+                };
+
+                try {
+                    cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                } catch (err) {
+                    // fallback: cari deviceId dengan label front/user
+                    const target = availableCameras.find(dev => {
+                        const lbl = (dev.label || '').toLowerCase();
+                        if (facingMode === 'user') {
+                            return lbl.includes('front') || lbl.includes('user') || lbl.includes('kamera depan') || lbl.includes('front camera');
+                        } else {
+                            return lbl.includes('back') || lbl.includes('rear') || lbl.includes('kamera belakang') || lbl.includes('back camera');
+                        }
+                    });
+
+                    if (target) {
+                        constraints.video = {
+                            deviceId: { exact: target.deviceId },
+                            width: { ideal: 800, max: 1024 },
+                            height: { ideal: 600, max: 768 }
+                        };
+                        cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                        const idx = availableCameras.findIndex(d => d.deviceId === target.deviceId);
+                        if (idx >= 0) currentCameraIndex = idx;
+                    } else {
+                        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    }
+                }
+
+                video.srcObject = cameraStream;
+                await new Promise(resolve => { video.onloadedmetadata = resolve; });
+
+                video.classList.remove('hidden');
+                startBtn && startBtn.classList.add('hidden');
+                stopBtn && stopBtn.classList.remove('hidden');
+                cameraControls && cameraControls.classList.remove('hidden');
+                statusDiv && statusDiv.classList.remove('hidden');
+
+                const track = cameraStream.getVideoTracks()[0];
+                const settings = track.getSettings();
+                const label = track.label || (facingMode === 'user' ? 'Kamera Depan' : 'Kamera Belakang');
+                statusText.innerHTML = `🔴 ${label} - ${settings.width || 'auto'}x${settings.height || 'auto'} (Facing: ${facingMode})`;
+
+                showNotification(`📷 Kamera ${facingMode === 'user' ? 'depan' : 'belakang'} aktif`, 'success');
+
+            } catch (error) {
+                console.error('Error opening facing camera:', error);
+                showNotification(`❌ Gagal membuka kamera ${facingMode === 'user' ? 'depan' : 'belakang'}`, 'error');
+            }
+        }
+
+        function openFrontCamera() {
+            switchToFacingMode('user');
+        }
+// ...existing code...
         
         function stopCameraAdvanced() {
             const video = document.getElementById('cameraPreview');
